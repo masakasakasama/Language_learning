@@ -101,6 +101,13 @@ window.App = (function () {
     window.addEventListener("mochi:sync-status", () => {
       if (typeof Views.refreshSyncPill === "function") Views.refreshSyncPill();
     });
+    window.addEventListener("mochi:joined-via-link", () => {
+      Storage.reload();
+      // If a modal is open (e.g. onboarding), close it
+      if (UI && UI.closeModal) UI.closeModal();
+      go("home");
+      UI.toast("☁️ Sync linked! Your progress will appear in a moment.", "good");
+    });
 
     // Bind nav
     document.querySelectorAll(".nav-btn").forEach((b) => {
@@ -117,7 +124,9 @@ window.App = (function () {
     setInterval(recordSession, 30000);
 
     refreshTopbar();
-    if (!Storage.isOnboarded()) {
+    // If page was opened via a join link, skip onboarding — sync.js will set things up
+    const isJoiningViaLink = /[#&?]join=/.test(location.hash + location.search);
+    if (!Storage.isOnboarded() && !isJoiningViaLink) {
       Views.onboarding();
     } else {
       go("home");

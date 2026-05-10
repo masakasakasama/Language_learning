@@ -269,6 +269,45 @@ async function setupFromSharePayload(payloadStr) {
   return obj.code;
 }
 
+// Build a join URL like:
+//   https://masakasakasama.github.io/Language_learning/#join=mochi1:xxxx
+// Opening it on another device auto-configures and joins sync — no user action needed.
+function buildJoinLink() {
+  const payload = buildSharePayload();
+  if (!payload) return null;
+  return location.origin + location.pathname + "#join=" + encodeURIComponent(payload);
+}
+
+// On page load, auto-join if URL has #join=...  (or ?join=...)
+async function tryAutoJoinFromURL() {
+  let payload = null;
+  const hash = location.hash || "";
+  const m = hash.match(/[#&]join=([^&]+)/);
+  if (m) payload = decodeURIComponent(m[1]);
+  if (!payload) {
+    const params = new URLSearchParams(location.search);
+    if (params.get("join")) payload = params.get("join");
+  }
+  if (!payload) return false;
+  const obj = parseSharePayload(payload);
+  if (!obj) return false;
+  // Apply: marks app as onboarded (so the user lands straight on Home with data)
+  setCfg(obj.cfg);
+  setMode("code");
+  setCode(obj.code);
+  try {
+    const root = JSON.parse(localStorage.getItem(STATE_KEY) || "{}");
+    root.onboarded = true;
+    localStorage.setItem(STATE_KEY, JSON.stringify(root));
+  } catch (e) {}
+  // Clean the URL so the secret isn't sitting in the address bar / history
+  try { history.replaceState(null, "", location.pathname); } catch (e) {}
+  ensureFirebaseInit();
+  setStatus("connecting");
+  window.dispatchEvent(new CustomEvent("mochi:joined-via-link"));
+  return true;
+}
+
 async function signInGoogle() {
   if (!ensureFirebaseInit()) throw new Error("Firebase not configured");
   const provider = new GoogleAuthProvider();
@@ -303,8 +342,10 @@ window.addEventListener("mochi:local-changed", () => {
   if (!applyingRemote) schedulePush();
 });
 
-// Try to init on load
-window.addEventListener("DOMContentLoaded", () => {
+// Try to init on load (also handles auto-join via URL)
+window.addEventListener("DOMContentLoaded", async () => {
+  const joined = await tryAutoJoinFromURL();
+  if (joined) return; // tryAutoJoinFromURL already initialized Firebase
   if (getCfg()) {
     ensureFirebaseInit();
     setStatus("connecting");
@@ -324,6 +365,7 @@ window.Sync = {
   setupCodeMode,
   setupUserMode,
   setupFromSharePayload,
+  buildJoinLink,
   signInGoogle,
   signInAnon,
   signOut: doSignOut,

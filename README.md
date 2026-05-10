@@ -79,17 +79,17 @@ Mochi syncs your progress across devices via **Firebase Firestore** (your own fr
 
 ### Mode A — Sync code *(recommended, no Google login)*
 
-Easiest. One device generates a sync code, the other device pastes it. Both devices share one Firestore doc.
+Easiest. One device generates a sync code, the other device just opens a link.
 
 1. Open https://console.firebase.google.com → create a free project
 2. **Build → Firestore Database** → Create (start in *test mode*)
 3. **Build → Authentication** → enable **Anonymous** (Mochi signs in invisibly so Firestore can identify devices)
 4. **Project Settings → Your apps → Web** → register and copy the `firebaseConfig` object
 5. On device A: **Profile → ☁️ Cloud sync → Set up sync** → paste config → **Generate sync code**
-6. Tap **📋 Copy share string** (it begins with `mochi1:` and packs both your config and the sync code into one string)
-7. On device B: **Profile → ☁️ Cloud sync → I have a code** → paste the share string → done
+6. Tap **📋 Copy join link** (or **📱 Show QR**) — the link contains your Firebase config + sync code
+7. On device B (your phone, your family's tablet, anywhere): **just open the link**. No sign-in, no settings, no setup. The app auto-configures sync, cleans the secret out of the URL, and starts syncing.
 
-That's it — no Google login, no double config entry. Works for "yourself + family" use.
+That's it. Share the link once, the rest is automatic on every other device.
 
 ### Mode B — Google sign-in (alt)
 

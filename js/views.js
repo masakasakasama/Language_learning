@@ -569,17 +569,22 @@ window.Views = (function () {
     const mode = window.Sync.getMode();
     if (mode === "code") {
       const code = window.Sync.getCode();
-      const payload = window.Sync.buildSharePayload();
+      const joinLink = window.Sync.buildJoinLink();
       const codeWrap = el("div", { class: "sync-code-wrap" });
-      codeWrap.appendChild(el("div", { class: "muted small", text: "Your sync code (paste this into your other device):" }));
-      codeWrap.appendChild(el("div", { class: "sync-code", text: code || "—" }));
-      const buttons = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
-        el("button", { class: "btn ghost", text: "📋 Copy share string", onclick: async () => {
-          if (!payload) return;
-          try { await navigator.clipboard.writeText(payload); toast("Copied! Paste this on your other device.", "good"); }
-          catch (e) { toast("Copy failed — long-press to copy:<br><code>" + payload + "</code>", "bad"); }
+      codeWrap.appendChild(el("div", { class: "muted small", text: "Send this link to your other device — opening it auto-syncs, no setup needed." }));
+      codeWrap.appendChild(el("div", { class: "sync-code", text: shortenLink(joinLink) }));
+      codeWrap.appendChild(el("div", { class: "muted small", style:"margin-top:6px;", text: "Sync code: " + (code || "—") }));
+      const buttons = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;" }, [
+        el("button", { class: "btn primary", text: "📋 Copy join link", onclick: async () => {
+          if (!joinLink) return;
+          try { await navigator.clipboard.writeText(joinLink); toast("Link copied! Send it to your other device.", "good"); }
+          catch (e) { toast("Copy failed — long-press to copy.", "bad"); }
         }}),
-        el("button", { class: "btn ghost", text: "Show QR", onclick: () => showQR(payload) }),
+        el("button", { class: "btn ghost", text: "📱 Show QR", onclick: () => showQR(joinLink) }),
+        navigator.share ? el("button", { class: "btn ghost", text: "↗ Share…", onclick: async () => {
+          try { await navigator.share({ title: "Mochi sync", text: "Open this on Mochi to sync our progress", url: joinLink }); }
+          catch (e) {/* user cancelled */}
+        }}) : null,
         el("button", { class: "btn ghost", text: "Force sync", onclick: () => window.Sync.pushNow() })
       ]);
       card.appendChild(codeWrap);
@@ -619,18 +624,21 @@ window.Views = (function () {
   }
 
   function showQR(payload) {
-    if (!payload) { toast("No code yet", "bad"); return; }
+    if (!payload) { toast("Not ready yet", "bad"); return; }
     const wrap = el("div", { class: "lang-picker" });
-    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Scan this on your other device" }));
+    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Scan on your other device" }));
+    wrap.appendChild(el("div", { class: "muted small center", text: "Open the camera, scan, then tap the link." }));
     const url = "https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=" + encodeURIComponent(payload);
     const img = el("img", { src: url, alt: "Sync QR", style: "display:block;margin:0 auto;border-radius:14px;background:white;padding:8px;width:280px;height:280px;" });
     wrap.appendChild(img);
-    wrap.appendChild(el("div", { class: "muted small center", text: "Or copy and paste this:" }));
-    const ta = el("textarea", { class: "ex-input", style: "min-height:100px;font-family:monospace;font-size:11px;width:100%;", text: payload });
-    ta.value = payload;
-    wrap.appendChild(ta);
+    wrap.appendChild(el("div", { class: "muted small center", style:"word-break:break-all;font-family:monospace;font-size:10px;margin-top:8px;", text: payload }));
     wrap.appendChild(el("button", { class: "btn primary big", text: "Done", onclick: () => UI.closeModal() }));
     UI.modal(wrap);
+  }
+  function shortenLink(link) {
+    if (!link) return "—";
+    if (link.length <= 60) return link;
+    return link.slice(0, 40) + "…" + link.slice(-12);
   }
 
   function showJoinByCode() {
