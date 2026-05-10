@@ -189,6 +189,8 @@ window.Exercises = (function () {
     clear(container);
     const wrap = el("div", { class: "ex ex-intro" });
     wrap.appendChild(el("div", { class: "intro-label", text: "New word ✨" }));
+    const emoji = (window.EMOJI && window.EMOJI.lookup(card)) || "";
+    if (emoji) wrap.appendChild(el("div", { class: "intro-emoji", text: emoji }));
     wrap.appendChild(el("div", { class: "intro-jp", text: card.front || card.jp }));
     if (card.kana && card.kana !== card.front) {
       wrap.appendChild(el("div", { class: "intro-kana", text: card.kana }));

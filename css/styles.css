@@ -551,6 +551,18 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 
 /* Word detail modal */
 .word-detail { display: flex; flex-direction: column; gap: 10px; padding: 4px; align-items: stretch; text-align: center; }
+.wd-emoji { font-size: 56px; line-height: 1; margin-top: 4px; }
+.bc-emoji { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+.intro-emoji { font-size: 64px; line-height: 1; margin: 4px 0; animation: bob 2.6s ease-in-out infinite; }
+
+.wd-examples { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; margin-top: 4px; text-align: left; }
+.wd-ex-title { font-weight: 700; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.wd-ex { padding: 6px 0; border-top: 1px dashed var(--border); }
+.wd-ex:first-of-type { border-top: none; padding-top: 0; }
+.wd-ex-text { display: flex; align-items: center; gap: 8px; }
+.wd-ex-jp { flex: 1; font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif; font-weight: 600; font-size: 16px; }
+.wd-ex-tr { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
 .wd-front { font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif; font-size: 56px; font-weight: 700; line-height: 1; }
 .wd-kana { font-size: 18px; color: var(--muted); }
 .wd-romaji { font-size: 13px; color: var(--muted); font-style: italic; }

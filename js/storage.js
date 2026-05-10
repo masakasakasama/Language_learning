@@ -124,11 +124,26 @@ window.Storage = (function () {
   }
 
   // Self-assessment marks: "know" | "ok" | "dontknow" | null
+  // Setting a mark also nudges the SRS schedule:
+  //   Hard → next review tomorrow + lower ease, so the word stays in
+  //          short-interval rotation ("am I forgetting this?")
+  //   Easy → push out (>=7 days)
+  //   OK   → treat as a normal "good" review
   function setMark(cardId, mark, lang) {
     const st = langState(lang);
     st.marks = st.marks || {};
-    if (mark == null) delete st.marks[cardId];
-    else st.marks[cardId] = mark;
+    if (mark == null) {
+      delete st.marks[cardId];
+      save();
+      return;
+    }
+    st.marks[cardId] = mark;
+    if (typeof window !== "undefined" && window.SRS) {
+      st.cards = st.cards || {};
+      st.cards[cardId] = window.SRS.applyMark(st.cards[cardId], mark);
+      st.learned = st.learned || {};
+      st.learned[cardId] = true;
+    }
     save();
   }
   function getMark(cardId, lang) {
@@ -155,6 +170,8 @@ window.Storage = (function () {
       romaji: input.romaji || input.kana || "",
       en: input.en || input.back || "",
       de: input.de || "",
+      emoji: input.emoji || "",
+      ex: Array.isArray(input.ex) ? input.ex : [],
       front: input.jp || input.front || "",
       back: input.en || input.back || "",
       hint: input.kana || input.hint || "",

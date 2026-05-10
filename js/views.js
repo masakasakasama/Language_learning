@@ -502,6 +502,8 @@ window.Views = (function () {
     const item = el("div", { class: "browse-card status-" + status + (mark ? " mark-" + mark : "") });
     item.appendChild(statusDot(status));
     const body = el("button", { class: "browse-card-body" });
+    const emoji = (window.EMOJI && window.EMOJI.lookup(c)) || "";
+    if (emoji) body.appendChild(el("div", { class: "bc-emoji", text: emoji }));
     body.appendChild(el("div", { class: "bc-front", text: c.front || c.jp }));
     body.appendChild(el("div", { class: "bc-back", text: c.back || c.en }));
     if (c.de) body.appendChild(el("div", { class: "bc-back tr-de", text: c.de }));
@@ -543,6 +545,9 @@ window.Views = (function () {
     wrap.appendChild(field("Pronunciation (kana / IPA / romanization)", "kana", lang === "ja" ? "しんぶん" : lang === "ko" ? "sinmun" : "ˈnjuːzpeɪpər"));
     wrap.appendChild(field("English meaning", "en", "newspaper", true));
     wrap.appendChild(field("German (optional)", "de", "Zeitung"));
+    wrap.appendChild(field("Emoji (optional)", "emoji", "🗞️"));
+    wrap.appendChild(field("Example sentence (optional)", "exText", lang === "ja" ? "毎朝、新聞を読みます。" : lang === "ko" ? "매일 아침 신문을 읽어요." : lang === "es" ? "Leo el periódico cada mañana." : "I read the newspaper every morning."));
+    wrap.appendChild(field("Example translation (optional)", "exTr", "I read the newspaper every morning."));
 
     // Level dropdown
     const lvWrap = el("div", { class: "form-field" });
@@ -562,9 +567,13 @@ window.Views = (function () {
         const jp = fields.jp.value.trim();
         const en = fields.en.value.trim();
         if (!jp || !en) { toast("Word and English meaning are required.", "bad"); return; }
+        const exText = fields.exText.value.trim();
+        const exTr = fields.exTr.value.trim();
         Storage.addCustomCard({
           jp, kana: fields.kana.value.trim(),
           en, de: fields.de.value.trim(),
+          emoji: fields.emoji.value.trim(),
+          ex: exText ? [[exText, exTr]] : [],
           level: lvSel.value
         }, lang);
         UI.closeModal();
@@ -608,6 +617,8 @@ window.Views = (function () {
     const srs = Storage.getCard(card.id, lang);
     const wrap = el("div", { class: "word-detail" });
 
+    const emoji = (window.EMOJI && window.EMOJI.lookup(card)) || "";
+    if (emoji) wrap.appendChild(el("div", { class: "wd-emoji", text: emoji }));
     wrap.appendChild(el("div", { class: "wd-front", text: card.front || card.jp }));
     if (card.kana && card.kana !== card.front) wrap.appendChild(el("div", { class: "wd-kana", text: card.kana }));
     if (card.romaji && card.romaji !== card.kana) wrap.appendChild(el("div", { class: "wd-romaji", text: card.romaji }));
@@ -618,6 +629,31 @@ window.Views = (function () {
     if (card.hint) wrap.appendChild(el("div", { class: "wd-hint", text: card.hint }));
 
     wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));
+
+    // Example sentences — only show ones whose required words are all already learned.
+    // Combines (a) the curated EXAMPLES pool with req tags, and (b) any inline `ex`
+    // baked into the card data.
+    const learned = Storage.learnedSet(lang);
+    const dynamicExamples = (App.examplesFor(card.id, lang) || []).filter((ex) => {
+      if (!ex.req) return true;
+      return ex.req.every((id) => !!learned[id] || id === card.id);
+    }).map((ex) => ({ text: ex.text, tr: ex.tr }));
+    const inlineExamples = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
+    const allExamples = dynamicExamples.concat(inlineExamples).slice(0, 3);
+    if (allExamples.length) {
+      const exBlock = el("div", { class: "wd-examples" });
+      exBlock.appendChild(el("div", { class: "wd-ex-title", text: "Example" + (allExamples.length > 1 ? "s" : "") }));
+      allExamples.forEach((ex) => {
+        const row = el("div", { class: "wd-ex" });
+        row.appendChild(el("div", { class: "wd-ex-text" }, [
+          el("span", { class: "wd-ex-jp", text: ex.text }),
+          el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
+        ]));
+        if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
+        exBlock.appendChild(row);
+      });
+      wrap.appendChild(exBlock);
+    }
 
     // Self-assessment block — visible 3-button row
     const currentMark = Storage.getMark(card.id, lang);

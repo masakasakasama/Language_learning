@@ -1,7 +1,30 @@
-// Spaced Repetition (Anki-inspired SM-2 simplified)
+// Spaced repetition based on the Ebbinghaus forgetting curve.
+//
+// Hermann Ebbinghaus (1885) showed that without rehearsal, recall drops to
+// roughly 60% within 20 minutes, 35% within 9 hours, and 20% within 31 days,
+// while each successful retrieval flattens the curve and pushes the next
+// review further out. Piotr Wozniak's SuperMemo SM-2 (1985) operationalised
+// this with expanding intervals; Anki uses the same schedule.
+//
+// Default progression for a confident answer ("good") here:
+//   reps 0 → 1 day      (just learned; recall is most fragile)
+//   reps 1 → 3 days     (covers the 24h-72h forgetting cliff)
+//   reps 2 → 7 days     (one-week consolidation)
+//   reps 3 → 14 days
+//   reps 4+ → previous interval × ease factor
+//
+// Mark-driven adjustments (set from Browse/Lesson "Easy / OK / Hard"):
+//   Hard ("dontknow") → interval = 1 day, reps reset, ease −0.20.
+//                       Card stays in the short-cycle until you stop missing it.
+//   OK ("ok")         → treated as a normal "good" review.
+//   Easy ("know")     → jumps 2 boxes ahead (≥ 4 days, often 14+), ease +0.15.
+//
+// "Again" wrong answer mid-quiz is more aggressive: interval = 0 (today).
 window.SRS = (function () {
   const MIN_EASE = 1.3;
   const DEFAULT_EASE = 2.5;
+  // Ebbinghaus-aligned graduating intervals (days)
+  const STEPS = [1, 3, 7, 14];
 
   function todayDate() {
     const d = new Date();
@@ -32,24 +55,27 @@ window.SRS = (function () {
     let { ease, interval, reps, lapses } = state;
 
     if (grade === "again") {
-      interval = 0;       // due today (ten min effectively)
+      interval = 0;
       ease = Math.max(MIN_EASE, ease - 0.2);
       lapses += 1;
       reps = 0;
     } else if (grade === "hard") {
       ease = Math.max(MIN_EASE, ease - 0.15);
-      if (reps === 0) interval = 1;
-      else interval = Math.max(1, Math.round(interval * 1.2));
+      // stay in graduating steps but advance slowly
+      const step = Math.min(reps, STEPS.length - 1);
+      interval = STEPS[step];
       reps += 1;
     } else if (grade === "good") {
-      if (reps === 0) interval = 1;
-      else if (reps === 1) interval = 6;
+      // Ebbinghaus-aligned graduating steps for the first few reviews,
+      // then exponential expansion via ease factor.
+      if (reps < STEPS.length) interval = STEPS[reps];
       else interval = Math.round(interval * ease);
       reps += 1;
     } else if (grade === "easy") {
-      if (reps === 0) interval = 4;
-      else interval = Math.round(interval * ease * 1.3);
-      ease += 0.15;
+      // Skip a step in the graduating sequence; bump ease.
+      const step = Math.min(reps + 2, STEPS.length - 1);
+      interval = reps + 2 < STEPS.length ? STEPS[step] : Math.round(interval * ease * 1.3);
+      ease = Math.min(3.0, ease + 0.15);
       reps += 1;
     }
 
@@ -58,6 +84,38 @@ window.SRS = (function () {
       ease, interval, reps, lapses, due,
       last: new Date().toISOString()
     };
+  }
+
+  // Apply a self-assessment mark to the SRS schedule.
+  //   "dontknow" (Hard)  → reset to 1-day interval, drop ease (so it stays short)
+  //   "ok"               → treat as a normal "good" review
+  //   "know" (Easy)      → push interval far out (>=7 days, double current),
+  //                        raise ease
+  function applyMark(state, mark) {
+    state = state || defaultState();
+    if (mark === "dontknow") {
+      return {
+        ease: Math.max(MIN_EASE, state.ease - 0.2),
+        interval: 1,
+        reps: state.reps || 0,
+        lapses: (state.lapses || 0) + 1,
+        due: addDays(todayDate(), 1).toISOString(),
+        last: new Date().toISOString()
+      };
+    }
+    if (mark === "know") {
+      const newInterval = Math.max(7, Math.round((state.interval || 1) * 2));
+      return {
+        ease: Math.min(3.0, state.ease + 0.15),
+        interval: newInterval,
+        reps: (state.reps || 0) + 1,
+        lapses: state.lapses || 0,
+        due: addDays(todayDate(), newInterval).toISOString(),
+        last: new Date().toISOString()
+      };
+    }
+    if (mark === "ok") return review(state, "good");
+    return state;
   }
 
   function isDue(state) {
@@ -89,7 +147,7 @@ window.SRS = (function () {
   }
 
   return {
-    review, isDue, dueCardIds, countDue, summary, defaultState,
+    review, applyMark, isDue, dueCardIds, countDue, summary, defaultState,
     DEFAULT_EASE, MIN_EASE
   };
 })();

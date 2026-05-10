@@ -1113,6 +1113,55 @@ window.DATA_JA = (function () {
     }
   ];
 
+  // ───────────── EXAMPLES (tagged) ─────────────
+  // Curated example sentences with required-words tagging. Display logic only
+  // shows an example when EVERY id in `req` is in the user's learned set, so
+  // examples never use words the learner hasn't met yet. `introduces` lets the
+  // app pick the right example when introducing a specific word.
+  // Format: { text, tr, req: [cardIds, …], introduces?: cardId }
+  const V = (deck, jp) => "ja:vocab:" + deck + ":" + jp;
+  const EXAMPLES = [
+    // greetings
+    { text: "こんにちは、友達。", tr: "Hello, friend.", req: [V("self-intro","友達")], introduces: V("greetings","こんにちは") },
+    { text: "ありがとう、お母さん。", tr: "Thanks, mom.", req: [V("family","お母さん")], introduces: V("greetings","ありがとう") },
+    // self & basic を-marker chains
+    { text: "私は学生です。", tr: "I am a student.", req: [V("self-intro","私"), V("self-intro","学生")], introduces: V("self-intro","学生") },
+    { text: "私は日本人です。", tr: "I am Japanese.", req: [V("self-intro","私"), V("self-intro","日本")], introduces: V("self-intro","日本") },
+    { text: "私の名前はモチです。", tr: "My name is Mochi.", req: [V("self-intro","私"), V("self-intro","名前")], introduces: V("self-intro","名前") },
+    // numbers
+    { text: "りんごを一つください。", tr: "One apple, please.", req: [V("numbers","一"), V("food","りんご")], introduces: V("numbers","一") },
+    { text: "友達が二人います。", tr: "I have two friends.", req: [V("numbers","二"), V("self-intro","友達")], introduces: V("numbers","二") },
+    // family
+    { text: "私の家族は四人です。", tr: "My family is four people.", req: [V("self-intro","私"), V("numbers","四")], introduces: V("family","家族") },
+    { text: "お父さんは先生です。", tr: "My father is a teacher.", req: [V("self-intro","先生")], introduces: V("family","お父さん") },
+    { text: "お母さんはやさしいです。", tr: "My mother is kind.", req: [], introduces: V("family","お母さん") },
+    { text: "私の猫の名前はモチです。", tr: "My cat's name is Mochi.", req: [V("self-intro","私"), V("self-intro","名前")], introduces: V("family","猫") },
+    { text: "犬はかわいいです。", tr: "Dogs are cute.", req: [V("adj-n5","可愛い")], introduces: V("family","犬") },
+    // food (uses verbs once verbs are learned)
+    { text: "水を飲みます。", tr: "I drink water.", req: [V("verbs-n5","飲む")], introduces: V("food","水") },
+    { text: "パンを食べます。", tr: "I eat bread.", req: [V("verbs-n5","食べる")], introduces: V("food","パン") },
+    { text: "ご飯を食べました。", tr: "I ate rice.", req: [V("verbs-n5","食べる")], introduces: V("food","ご飯") },
+    { text: "コーヒーが好きです。", tr: "I like coffee.", req: [], introduces: V("food","コーヒー") },
+    { text: "寿司は美味しいです。", tr: "Sushi is delicious.", req: [V("food","美味しい")], introduces: V("food","寿司") },
+    // verbs N5
+    { text: "本を読みます。", tr: "I read a book.", req: [], introduces: V("verbs-n5","読む") },
+    { text: "学校に行きます。", tr: "I go to school.", req: [], introduces: V("verbs-n5","行く") },
+    { text: "夜、寝ます。", tr: "I sleep at night.", req: [V("days-time","夜")], introduces: V("verbs-n5","寝る") },
+    { text: "朝、起きます。", tr: "I get up in the morning.", req: [V("days-time","朝")], introduces: V("verbs-n5","起きる") },
+    // adjectives
+    { text: "猫はかわいいです。", tr: "Cats are cute.", req: [V("family","猫")], introduces: V("adj-n5","可愛い") },
+    { text: "今日は寒いです。", tr: "It's cold today.", req: [V("days-time","今日")], introduces: V("adj-n5","寒い") },
+    { text: "今日は暑いです。", tr: "It's hot today.", req: [V("days-time","今日")], introduces: V("adj-n5","暑い") },
+    { text: "新しい本を買いました。", tr: "I bought a new book.", req: [V("verbs-n5","買う")], introduces: V("adj-n5","新しい") },
+    // days
+    { text: "今日は月曜日です。", tr: "Today is Monday.", req: [V("days-time","今日")], introduces: V("days-time","月曜日") },
+    { text: "明日、友達と会います。", tr: "I'll meet my friend tomorrow.", req: [V("self-intro","友達")], introduces: V("days-time","明日") },
+    // N4 & up — use N5 vocab in the requires set
+    { text: "電車で会社に行きます。", tr: "I go to work by train.", req: [V("work-n4","会社"), V("verbs-n5","行く")], introduces: V("travel-n4","電車") },
+    { text: "会社で働きます。", tr: "I work at the company.", req: [], introduces: V("work-n4","会社") },
+    { text: "嬉しいです！", tr: "I'm happy!", req: [], introduces: V("feelings-n4","嬉しい") }
+  ];
+
   // Flatten all cards into a single map for SRS
   const ALL_CARDS = [];
   function pushAll(arr) { arr.forEach((c) => ALL_CARDS.push(c)); }
@@ -1121,7 +1170,7 @@ window.DATA_JA = (function () {
   Object.values(KANJI).forEach(pushAll);
 
   return {
-    KANA, VOCAB, KANJI, GRAMMAR, UNITS, ALL_CARDS,
+    KANA, VOCAB, KANJI, GRAMMAR, UNITS, EXAMPLES, ALL_CARDS,
     grammarById: (id) => GRAMMAR.find((g) => g.id === id),
     cardById: (id) => ALL_CARDS.find((c) => c.id === id)
   };
