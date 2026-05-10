@@ -126,7 +126,32 @@ window.DATA_JA = (function () {
     "仕事":"Arbeit","会社":"Firma","会議":"Meeting","上司":"Vorgesetzte/r",
     // feelings N4
     "嬉しい":"glücklich","悲しい":"traurig","怒る":"sich ärgern","驚く":"überrascht sein",
-    "心配":"Sorge","安心":"Erleichterung","興味":"Interesse","緊張":"Nervosität"
+    "心配":"Sorge","安心":"Erleichterung","興味":"Interesse","緊張":"Nervosität",
+    // social N3
+    "社会":"Gesellschaft","環境":"Umwelt","経済":"Wirtschaft","政治":"Politik",
+    "文化":"Kultur","教育":"Bildung","技術":"Technologie","科学":"Wissenschaft",
+    "法律":"Gesetz","影響":"Einfluss",
+    // abstract N3
+    "性格":"Persönlichkeit","態度":"Einstellung","意見":"Meinung","目的":"Ziel",
+    "結果":"Ergebnis","原因":"Ursache","理由":"Grund","問題":"Problem","解決":"Lösung",
+    // news N2
+    "記事":"Artikel","新聞":"Zeitung","雑誌":"Zeitschrift","報道":"Berichterstattung",
+    "事件":"Vorfall","事故":"Unfall","経験":"Erfahrung","状況":"Situation",
+    "報告":"Bericht","発表":"Ankündigung",
+    // business N2
+    "契約":"Vertrag","取引":"Geschäft","責任":"Verantwortung","効率":"Effizienz",
+    "生産":"Produktion","販売":"Vertrieb","市場":"Markt","競争":"Wettbewerb",
+    // advanced N1
+    "概念":"Konzept","矛盾":"Widerspruch","普及":"Verbreitung","緩和":"Lockerung",
+    "顕著":"auffällig","憂慮":"Besorgnis","示唆":"Andeutung","遵守":"Einhaltung",
+    "排他的":"exklusiv","顧みる":"reflektieren über",
+    // idioms N1
+    "猫の手も借りたい":"völlig überlastet","一石二鳥":"zwei Fliegen mit einer Klappe",
+    "十人十色":"jeder ist anders","以心伝心":"stilles Einverständnis",
+    "臨機応変":"situativ angepasst",
+    // common N5 still missing
+    "あなた":"du / Sie","これ":"dies","それ":"das","あれ":"jenes","何":"was",
+    "本":"Buch","ペン":"Stift","映画":"Film","音楽":"Musik","花":"Blume","空":"Himmel"
   };
 
   const VOCAB = {

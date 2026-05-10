@@ -30,7 +30,27 @@ window.DATA_ES = (function () {
     "ser":"sein (Eigenschaft)","estar":"sein (Zustand)","tener":"haben","comer":"essen",
     "beber":"trinken","ir":"gehen","venir":"kommen","ver":"sehen","hablar":"sprechen","leer":"lesen",
     "grande":"groß","pequeño":"klein","bueno":"gut","malo":"schlecht","bonito":"hübsch",
-    "feo":"hässlich","caliente":"heiß","frío":"kalt","feliz":"glücklich","triste":"traurig"
+    "feo":"hässlich","caliente":"heiß","frío":"kalt","feliz":"glücklich","triste":"traurig",
+    // A2 routines & places
+    "levantarse":"aufstehen","desayunar":"frühstücken","trabajar":"arbeiten",
+    "estudiar":"lernen","dormir":"schlafen","ducharse":"duschen",
+    "casa":"Haus","escuela":"Schule","trabajo":"Arbeit","restaurante":"Restaurant",
+    "hospital":"Krankenhaus","tienda":"Geschäft","parque":"Park",
+    // B1 travel & opinions
+    "viaje":"Reise","aeropuerto":"Flughafen","maleta":"Koffer","hotel":"Hotel",
+    "billete":"Fahrkarte","reserva":"Reservierung","llegada":"Ankunft",
+    "creer":"glauben","pensar":"denken","estar de acuerdo":"einverstanden sein",
+    "quizás":"vielleicht","seguramente":"sicherlich",
+    // B2 abstract
+    "desafío":"Herausforderung","oportunidad":"Gelegenheit","consecuencia":"Konsequenz",
+    "sostenible":"nachhaltig","controversia":"Kontroverse",
+    // C1 nuance & idioms
+    "matiz":"Nuance","mitigar":"abmildern","pragmático":"pragmatisch","ambigüo":"mehrdeutig",
+    "estar en las nubes":"in den Wolken sein","dar en el clavo":"den Nagel auf den Kopf treffen",
+    "echar una mano":"eine Hand reichen","tomar el pelo":"jdn. auf den Arm nehmen",
+    // C2 mastery
+    "ubicuo":"allgegenwärtig","efímero":"vergänglich",
+    "recalcitrant":"widerspenstig","epitomar":"verkörpern"
   };
 
   const VOCAB = {

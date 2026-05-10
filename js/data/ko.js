@@ -78,7 +78,23 @@ window.DATA_KO = (function () {
     "가다":"gehen","오다":"kommen","먹다":"essen","마시다":"trinken","보다":"sehen",
     "듣다":"hören","하다":"machen","사다":"kaufen","자다":"schlafen","좋아하다":"mögen",
     "크다":"groß","작다":"klein","좋다":"gut","나쁘다":"schlecht","예쁘다":"hübsch",
-    "귀엽다":"süß","맛있다":"schmackhaft","덥다":"heiß","춥다":"kalt","재미있다":"interessant"
+    "귀엽다":"süß","맛있다":"schmackhaft","덥다":"heiß","춥다":"kalt","재미있다":"interessant",
+    // T2 places & travel
+    "학교":"Schule","집":"Haus / Zuhause","식당":"Restaurant","병원":"Krankenhaus",
+    "공원":"Park","회사":"Firma","은행":"Bank","기차역":"Bahnhof",
+    "여행":"Reise","비행기":"Flugzeug","기차":"Zug","버스":"Bus","택시":"Taxi",
+    "호텔":"Hotel","표":"Fahrkarte",
+    // T3 work
+    "회의":"Meeting","보고서":"Bericht","계획":"Plan","문제":"Problem",
+    "결과":"Ergebnis","경험":"Erfahrung",
+    // T4 society
+    "사회":"Gesellschaft","문화":"Kultur","경제":"Wirtschaft","환경":"Umwelt",
+    "교육":"Bildung","기술":"Technologie",
+    // T5 advanced
+    "정책":"Politik / Strategie","영향":"Einfluss","분석":"Analyse",
+    "증가":"Anstieg","감소":"Rückgang",
+    // T6 mastery
+    "함축":"Implikation","전제":"Voraussetzung","반증":"Gegenbeweis","수용":"Akzeptanz"
   };
 
   const VOCAB = {

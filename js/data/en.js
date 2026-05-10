@@ -31,7 +31,31 @@ window.DATA_EN = (function () {
     "to be":"sein","to have":"haben","to eat":"essen","to drink":"trinken",
     "to go":"gehen","to come":"kommen","to see":"sehen","to like":"mögen",
     "big":"groß","small":"klein","good":"gut","bad":"schlecht","happy":"glücklich",
-    "sad":"traurig","hot":"heiß","cold":"kalt"
+    "sad":"traurig","hot":"heiß","cold":"kalt",
+    // A2 routines & shopping
+    "wake up":"aufwachen","get dressed":"sich anziehen","have breakfast":"frühstücken",
+    "go to work":"zur Arbeit gehen","come home":"nach Hause kommen",
+    "take a shower":"duschen","go to bed":"ins Bett gehen",
+    "shop":"Geschäft","buy":"kaufen","sell":"verkaufen","price":"Preis",
+    "cheap":"billig","expensive":"teuer","receipt":"Quittung","cash":"Bargeld","card":"Karte",
+    // B1 travel & opinions
+    "flight":"Flug","luggage":"Gepäck","passport":"Reisepass","delay":"Verspätung",
+    "reservation":"Reservierung","destination":"Ziel","souvenir":"Souvenir",
+    "agree":"zustimmen","disagree":"widersprechen","maybe":"vielleicht",
+    "probably":"wahrscheinlich","definitely":"definitiv","I think":"ich denke","actually":"eigentlich",
+    // B2 abstract & phrasals
+    "challenge":"Herausforderung","opportunity":"Gelegenheit","assumption":"Annahme",
+    "consequence":"Konsequenz","controversy":"Kontroverse","sustainable":"nachhaltig",
+    "look up":"nachschlagen","give up":"aufgeben","put off":"verschieben",
+    "come across":"zufällig finden","bring about":"verursachen",
+    // C1 nuance & idioms
+    "nuance":"Nuance","mitigate":"abmildern","scrutinize":"genau prüfen",
+    "pragmatic":"pragmatisch","ambiguous":"mehrdeutig",
+    "a piece of cake":"ein Kinderspiel","break the ice":"das Eis brechen",
+    "hit the books":"büffeln","under the weather":"unpässlich","spill the beans":"das Geheimnis verraten",
+    // C2 mastery
+    "ubiquitous":"allgegenwärtig","serendipity":"glücklicher Zufall",
+    "ephemeral":"vergänglich","recalcitrant":"widerspenstig","epitomize":"verkörpern"
   };
 
   const VOCAB = {

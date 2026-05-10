@@ -526,15 +526,31 @@ window.Views = (function () {
 
     wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));
 
-    // Self-assessment row
+    // Self-assessment block — visible 3-button row
     const currentMark = Storage.getMark(card.id, lang);
-    wrap.appendChild(el("div", { class: "muted small", style:"margin-top:4px;", text: "How well do you know this?" }));
-    wrap.appendChild(markRow(card.id, lang, currentMark, () => {
-      // re-open the modal to reflect the new mark; also refresh the underlying view
-      UI.closeModal();
-      showWordDetail(card, lang, onChange);
-      if (onChange) onChange();
-    }));
+    const markBlock = el("div", { class: "wd-mark-block" });
+    markBlock.appendChild(el("div", { class: "wd-mark-label", text: "How well do you know this?" }));
+    const bigRow = el("div", { class: "mark-row mark-row-big" });
+    [
+      { id: "know",     icon: "😀", label: "Easy" },
+      { id: "ok",       icon: "😐", label: "OK" },
+      { id: "dontknow", icon: "😕", label: "Hard" }
+    ].forEach((o) => {
+      const isActive = currentMark === o.id;
+      const btn = el("button", { class: "mark-btn mark-btn-big mark-" + o.id + (isActive ? " active" : "") }, [
+        el("div", { class: "mark-icon", text: o.icon }),
+        el("div", { class: "mark-label-txt", text: o.label })
+      ]);
+      btn.onclick = () => {
+        Storage.setMark(card.id, isActive ? null : o.id, lang);
+        UI.closeModal();
+        showWordDetail(card, lang, onChange);
+        if (onChange) onChange();
+      };
+      bigRow.appendChild(btn);
+    });
+    markBlock.appendChild(bigRow);
+    wrap.appendChild(markBlock);
 
     // Status panel
     const statusBlock = el("div", { class: "wd-status" });
@@ -782,6 +798,27 @@ window.Views = (function () {
         card.appendChild(row);
       }
     }
+    // Help block: permanent Firestore rules (test mode expires after 30 days)
+    const help = el("details", { class: "sync-help" });
+    help.appendChild(el("summary", { text: "ℹ️ Test mode expires in 30 days — permanent Firestore rules" }));
+    const rules = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /sync/{code}/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`;
+    const pre = el("pre", { class: "sync-rules", text: rules });
+    help.appendChild(pre);
+    help.appendChild(el("button", { class: "btn ghost", text: "📋 Copy rules", onclick: async () => {
+      try { await navigator.clipboard.writeText(rules); toast("Copied. Paste in Firebase Console → Firestore → Rules.", "good"); }
+      catch (e) { toast("Copy failed — long-press to select.", "bad"); }
+    }}));
+    help.appendChild(el("div", { class: "muted small", style:"margin-top:6px;line-height:1.5;",
+      html: "Open <b>Firebase Console → Firestore Database → Rules</b>, paste the rules above, then Publish. Your sync code (16 random characters) acts as the password — only people with the link can access this document." }));
+    card.appendChild(help);
+
     const reset = el("button", { class: "btn warn ghost", style: "margin-top:8px;", text: "Disconnect", onclick: () => {
       if (confirm("Disconnect cloud sync? Local progress is kept.")) {
         window.Sync.disconnect();

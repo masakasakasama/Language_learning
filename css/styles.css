@@ -560,6 +560,52 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .wd-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border); }
 .wd-row:last-child { border: none; }
 
+/* Big mark buttons in word detail modal */
+.wd-mark-block {
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 12px;
+  margin-top: 4px;
+}
+.wd-mark-label {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.mark-row-big {
+  display: flex;
+  gap: 8px;
+  background: transparent;
+  border: none;
+}
+.mark-btn-big {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 4px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-bottom-width: 4px;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  opacity: 1;
+  transition: transform 0.1s, background 0.2s, border-color 0.2s, color 0.2s;
+}
+.mark-btn-big .mark-icon { font-size: 28px; line-height: 1; }
+.mark-btn-big.mark-know.active     { background: rgba(95,184,107,0.18);  border-color: #5fb86b; color: #2f7a39; }
+.mark-btn-big.mark-ok.active       { background: rgba(252,211,77,0.22);  border-color: #f0b800; color: #8c6800; }
+.mark-btn-big.mark-dontknow.active { background: rgba(239,111,124,0.18); border-color: #ef6f7c; color: #a83440; }
+body.dark .mark-btn-big.mark-know.active     { color: #b9e6c1; }
+body.dark .mark-btn-big.mark-ok.active       { color: #ffe7a3; }
+body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
+.mark-btn-big:active { transform: translateY(2px); border-bottom-width: 2px; }
+
 /* Stats */
 .stat-today, .stat-chart, .stat-heat, .stat-cum {
   background: var(--surface);
@@ -604,6 +650,23 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .sync-status-warn { background: rgba(251,146,60,0.18); color: var(--warn); }
 .sync-status-bad  { background: rgba(239,111,124,0.18); color: var(--bad); }
 .sync-user { padding: 8px 10px; background: var(--surface-2); border-radius: 12px; }
+.sync-help {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+.sync-help summary { cursor: pointer; font-weight: 600; font-size: 13px; padding: 4px 0; }
+.sync-rules {
+  background: var(--bg-2);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: monospace;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 8px 0;
+}
 .sync-code-wrap { background: var(--surface-2); padding: 12px; border-radius: 14px; }
 .sync-code {
   font-family: monospace;
