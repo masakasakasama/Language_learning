@@ -68,6 +68,14 @@ window.Storage = (function () {
 
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (e) {}
+    // Notify sync layer (and anything else interested) that local state changed
+    try { window.dispatchEvent(new CustomEvent("mochi:local-changed")); } catch (e) {}
+  }
+
+  // Re-read state from localStorage (used after a sync pulls remote into local)
+  function reload() {
+    cache = null;
+    return load();
   }
 
   function reset() {
@@ -233,7 +241,7 @@ window.Storage = (function () {
   function getTheme() { return load().theme || "light"; }
 
   return {
-    load, save, reset, todayStr,
+    load, save, reload, reset, todayStr,
     getLang, setLang, langState,
     getCard, setCard,
     isLearned, markLearned, learnedSet,

@@ -74,6 +74,48 @@ The shape (rough sketch):
 
 Nothing leaves your device. To wipe it: open Profile → "Reset all progress", or in DevTools console `localStorage.removeItem("mochi.v1")`.
 
+## Cloud sync (across phone & desktop)
+
+Mochi can sync your progress across devices using **Firebase** (your own free project). Each device pulls and pushes the same state, with a smart per-field merger so a heart lost on your phone still costs you on desktop, an XP gain stays as a max, etc.
+
+### One-time setup
+
+1. Open https://console.firebase.google.com and create a project (free)
+2. **Build → Authentication** → enable **Google** sign-in (and/or **Anonymous**)
+3. **Build → Firestore Database** → Create → start in *test mode* (you can lock it down later, see rules below)
+4. **Project Settings → Your apps → Web** → register an app and copy the `firebaseConfig` object
+5. In the Mochi app, go to **Profile → ☁️ Cloud sync → Set up sync**, paste the config, save
+6. Sign in with Google
+7. On your other device: open Mochi, paste the **same** config, sign in with the **same** Google account → progress syncs in real time
+
+### Recommended Firestore rules
+
+```js
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
+
+Each user can only access their own state document.
+
+### Merge behavior
+
+When two devices have made different changes:
+
+| Field | Strategy |
+|---|---|
+| Card SRS state | Newer `last` timestamp wins |
+| `lessonsCompleted`, `learned` | Union (true once true) |
+| Hearts | Take the **min** (penalties stick) |
+| XP, longest streak | Take the **max** |
+| Per-day stats | Per-field max |
+| Current language, theme | Last writer wins |
+
 ## Adding content
 
 All lesson content lives in `js/data/`:

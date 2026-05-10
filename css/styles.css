@@ -522,6 +522,18 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .heat-l3 { background: rgba(95,184,107,0.75); }
 .heat-l4 { background: rgba(95,184,107,1.0); }
 
+.sync-card { display: flex; flex-direction: column; gap: 10px; }
+.sync-status {
+  font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--surface-2); color: var(--muted);
+  white-space: nowrap;
+}
+.sync-status-good { background: rgba(95,184,107,0.18); color: var(--good); }
+.sync-status-warn { background: rgba(251,146,60,0.18); color: var(--warn); }
+.sync-status-bad  { background: rgba(239,111,124,0.18); color: var(--bad); }
+.sync-user { padding: 8px 10px; background: var(--surface-2); border-radius: 12px; }
+
 .settings { display: flex; flex-direction: column; gap: 8px; }
 .storage-info { line-height: 1.6; padding: 10px 14px; }
 .storage-info code { background: var(--bg-2); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 11px; }

@@ -528,6 +528,9 @@ window.Views = (function () {
     learnCard.appendChild(progressBar((seen / pack.ALL_CARDS.length) * 100, `linear-gradient(90deg, ${meta.color}, #7dd3fc)`));
     viewEl.appendChild(learnCard);
 
+    // Cloud sync
+    viewEl.appendChild(syncCard());
+
     // Settings
     const settings = el("div", { class: "card settings" });
     settings.appendChild(el("div", { class: "muted", text: "Settings" }));
@@ -552,6 +555,120 @@ window.Views = (function () {
     const info = el("div", { class: "card storage-info muted small" });
     info.innerHTML = "Your progress, SRS state, learned words, hearts and stats are stored locally in <b>localStorage</b> under the key <code>mochi.v1</code>. Nothing leaves your device.";
     viewEl.appendChild(info);
+  }
+
+  function syncCard() {
+    const card = el("div", { class: "card sync-card" });
+    card.appendChild(el("div", { class: "card-row" }, [
+      el("div", {}, [
+        el("div", { text: "☁️ Cloud sync", style: "font-weight:700;" }),
+        el("div", { class: "muted small", text: "Sync your progress across phone & desktop" })
+      ]),
+      el("div", { class: "sync-status", id: "sync-status-pill" })
+    ]));
+    refreshSyncPill();
+
+    if (!window.Sync || !window.Sync.isConfigured()) {
+      const setup = el("button", { class: "btn primary", text: "Set up sync", onclick: showSyncSetup });
+      card.appendChild(setup);
+      const help = el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
+        html: "Free with a Firebase project. We store your progress in your own Firestore — no third-party servers." });
+      card.appendChild(help);
+      return card;
+    }
+
+    const user = window.Sync.user();
+    if (user) {
+      const info = el("div", { class: "sync-user" }, [
+        el("div", { text: user.displayName || user.email || "Anonymous" }),
+        el("div", { class: "muted small", text: user.uid.slice(0, 12) + "…" })
+      ]);
+      card.appendChild(info);
+      const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
+        el("button", { class: "btn ghost", text: "Force sync now", onclick: () => window.Sync.pushNow() }),
+        el("button", { class: "btn ghost", text: "Sign out", onclick: async () => { await window.Sync.signOut(); App.go("profile"); } })
+      ]);
+      card.appendChild(row);
+    } else {
+      const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
+        el("button", { class: "btn primary", text: "Sign in with Google", onclick: async () => {
+          try { await window.Sync.signInGoogle(); App.go("profile"); }
+          catch (e) { toast("Sign-in failed: " + e.message, "bad"); }
+        }}),
+        el("button", { class: "btn ghost", text: "Anonymous", onclick: async () => {
+          try { await window.Sync.signInAnon(); App.go("profile"); }
+          catch (e) { toast("Sign-in failed: " + e.message, "bad"); }
+        }})
+      ]);
+      card.appendChild(row);
+    }
+    const reset = el("button", { class: "btn warn ghost", style: "margin-top:8px;", text: "Disconnect / change project", onclick: () => {
+      if (confirm("Disconnect cloud sync? Local progress is kept.")) {
+        window.Sync.unsetConfig();
+        App.go("profile");
+      }
+    }});
+    card.appendChild(reset);
+    return card;
+  }
+
+  function refreshSyncPill() {
+    const pill = document.getElementById("sync-status-pill");
+    if (!pill || !window.Sync) return;
+    const s = window.Sync.status();
+    const map = {
+      "disabled":   { label: "off",        cls: "muted" },
+      "signed-out": { label: "signed out", cls: "muted" },
+      "connecting": { label: "connecting…",cls: "warn"  },
+      "pending":    { label: "syncing…",   cls: "warn"  },
+      "synced":     { label: "synced ✓",   cls: "good"  },
+      "error":      { label: "error",      cls: "bad"   }
+    };
+    const m = map[s.state] || map.disabled;
+    pill.textContent = m.label;
+    pill.className = "sync-status sync-status-" + m.cls;
+  }
+
+  function showSyncSetup() {
+    const wrap = el("div", { class: "lang-picker" });
+    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Set up Firebase sync" }));
+    wrap.appendChild(el("div", { class: "muted small", html:
+      "1. Open <b>console.firebase.google.com</b><br>" +
+      "2. Create a project (free)<br>" +
+      "3. Add a <b>Web app</b> — copy the firebaseConfig object<br>" +
+      "4. Enable <b>Authentication → Google</b> (and/or Anonymous)<br>" +
+      "5. Create a <b>Firestore Database</b> (test mode is fine to start)<br>" +
+      "6. Paste the config below 👇"
+    }));
+    const ta = el("textarea", { class: "ex-input", style: "min-height:160px;font-family:monospace;font-size:12px;text-align:left;width:100%;",
+      placeholder: '{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "...",\n  "appId": "..."\n}' });
+    wrap.appendChild(ta);
+    const save = el("button", { class: "btn primary big", text: "Save & connect", onclick: () => {
+      let cfg;
+      try {
+        let txt = ta.value.trim();
+        if (txt.startsWith("const") || txt.startsWith("let") || txt.startsWith("var")) {
+          // user pasted "const firebaseConfig = {...};"
+          txt = txt.replace(/^[^=]*=\s*/, "").replace(/;$/, "");
+        }
+        // try JSON, then JS-object eval-lite
+        try { cfg = JSON.parse(txt); }
+        catch (e) { cfg = (new Function("return (" + txt + ")"))(); }
+      } catch (e) {
+        toast("Invalid config: " + e.message, "bad");
+        return;
+      }
+      if (!cfg || !cfg.apiKey || !cfg.projectId) {
+        toast("Need at least apiKey + projectId", "bad");
+        return;
+      }
+      window.Sync.setConfig(cfg);
+      UI.closeModal();
+      toast("Sync configured! Now sign in.", "good");
+      App.go("profile");
+    }});
+    wrap.appendChild(save);
+    UI.modal(wrap);
   }
 
   function statBlock(label, value) {
@@ -609,5 +726,5 @@ window.Views = (function () {
     UI.modal(wrap);
   }
 
-  return { home, unit, lesson, review, browse, profile, langPicker, onboarding };
+  return { home, unit, lesson, review, browse, profile, langPicker, onboarding, refreshSyncPill };
 })();

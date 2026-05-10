@@ -89,6 +89,20 @@ window.App = (function () {
     // Theme
     document.body.classList.toggle("dark", Storage.getTheme() === "dark");
 
+    // Sync events
+    window.addEventListener("mochi:remote-applied", () => {
+      Storage.reload();
+      // refresh whatever screen is open
+      go(currentView);
+    });
+    window.addEventListener("mochi:auth-changed", () => {
+      if (currentView === "profile") go("profile");
+      refreshTopbar();
+    });
+    window.addEventListener("mochi:sync-status", () => {
+      if (typeof Views.refreshSyncPill === "function") Views.refreshSyncPill();
+    });
+
     // Bind nav
     document.querySelectorAll(".nav-btn").forEach((b) => {
       b.addEventListener("click", () => go(b.dataset.nav));
