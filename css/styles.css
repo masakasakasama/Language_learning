@@ -82,7 +82,13 @@ body.dark .topbar { background: rgba(28, 20, 36, 0.92); }
   display: flex; align-items: center; gap: 6px;
   padding: 6px 10px; border-radius: 999px;
 }
-.logo-mascot { font-size: 22px; }
+.logo-mascot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+}
 .logo-text {
   font-weight: 700; font-size: 18px;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));

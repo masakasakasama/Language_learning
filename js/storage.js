@@ -80,6 +80,76 @@ window.Storage = (function () {
     save();
   }
 
+  // Export the whole state object so the user can save a backup file.
+  function exportData() {
+    return JSON.stringify(load(), null, 2);
+  }
+
+  // Import a previously-exported JSON string. If `mergeMode` is true, we merge
+  // word-level data; otherwise the file replaces local state entirely.
+  // Returns { ok: true } / { ok: false, error: "..." }.
+  function importData(jsonStr, mergeMode) {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (!parsed || typeof parsed !== "object" || !parsed.languages) {
+        return { ok: false, error: "File does not look like a mumu backup." };
+      }
+      if (mergeMode) {
+        // Per-language merge: union cards/learned/lessonsCompleted, max for xp.
+        const cur = load();
+        Object.keys(parsed.languages || {}).forEach((lang) => {
+          const a = cur.languages[lang] || defaultLangState();
+          const b = parsed.languages[lang] || {};
+          a.cards = Object.assign({}, b.cards || {}, a.cards || {});
+          a.learned = Object.assign({}, b.learned || {}, a.learned || {});
+          a.lessonsCompleted = Object.assign({}, b.lessonsCompleted || {}, a.lessonsCompleted || {});
+          a.marks = Object.assign({}, b.marks || {}, a.marks || {});
+          a.xp = Math.max(a.xp || 0, b.xp || 0);
+          a.level = Math.max(a.level || 1, b.level || 1);
+          // Append new custom cards
+          const seen = new Set((a.customCards || []).map((c) => c.id));
+          (b.customCards || []).forEach((c) => { if (c && c.id && !seen.has(c.id)) a.customCards.push(c); });
+          cur.languages[lang] = a;
+        });
+        // Merge stats per date — take max of each metric
+        Object.keys(parsed.stats?.byDate || {}).forEach((d) => {
+          const x = cur.stats.byDate[d] || { mins:0, cards:0, correct:0, lessons:0, xp:0 };
+          const y = parsed.stats.byDate[d];
+          cur.stats.byDate[d] = {
+            mins: Math.max(x.mins||0, y.mins||0),
+            cards: Math.max(x.cards||0, y.cards||0),
+            correct: Math.max(x.correct||0, y.correct||0),
+            lessons: Math.max(x.lessons||0, y.lessons||0),
+            xp: Math.max(x.xp||0, y.xp||0)
+          };
+        });
+        // Streak: keep the longer
+        if ((parsed.streak?.longest || 0) > (cur.streak.longest || 0)) cur.streak.longest = parsed.streak.longest;
+        cur.xpTotal = Math.max(cur.xpTotal || 0, parsed.xpTotal || 0);
+      } else {
+        cache = parsed;
+      }
+      save();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  function downloadBackup() {
+    const data = exportData();
+    const stamp = todayStr();
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mumu-backup-" + stamp + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+  }
+
   function todayStr() {
     const d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
@@ -301,6 +371,7 @@ window.Storage = (function () {
 
   return {
     load, save, reload, reset, todayStr,
+    exportData, importData, downloadBackup,
     getLang, setLang, langState,
     getCard, setCard,
     isLearned, markLearned, learnedSet, forgetCard, cardStatus,

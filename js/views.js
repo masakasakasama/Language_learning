@@ -935,14 +935,48 @@ window.Views = (function () {
     }});
     settings.appendChild(themeBtn);
     const resetBtn = el("button", { class: "btn warn", text: "Reset all progress", onclick: () => {
-      if (confirm("Reset all progress for all languages? This can't be undone.")) {
-        Storage.reset();
-        App.refreshTopbar();
-        App.go("home");
-      }
+      if (!confirm("Reset all progress for all languages? Tap Cancel and use Export Backup first if you want to keep a copy.")) return;
+      if (!confirm("Really wipe everything? This can't be undone.")) return;
+      Storage.reset();
+      App.refreshTopbar();
+      App.go("home");
     }});
     settings.appendChild(resetBtn);
     viewEl.appendChild(settings);
+
+    // Backup card — explicit export/import so accidental deletes are recoverable
+    const backup = el("div", { class: "card backup-card" });
+    backup.appendChild(el("div", { class: "muted", text: "📦 Backup" }));
+    backup.appendChild(el("div", { class: "muted small", style:"line-height:1.5;",
+      html: "Save your whole progress as a file. Import it later to restore everything (SRS schedule, marks, custom words, stats)." }));
+    const backupRow = el("div", { style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;" });
+    backupRow.appendChild(el("button", { class: "btn primary", text: "📥 Export backup", onclick: () => {
+      Storage.downloadBackup();
+      toast("Backup downloaded ✨", "good");
+    }}));
+    const fileInput = el("input", { type: "file", accept: "application/json,.json", style: "display:none;" });
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const choice = confirm("Click OK to MERGE with current progress (safe — keeps both).\n\nClick Cancel to REPLACE everything with the backup file.");
+        const result = Storage.importData(reader.result, choice);
+        if (result.ok) {
+          toast("Backup restored ✨", "good");
+          App.refreshTopbar();
+          App.go("profile");
+        } else {
+          toast("Import failed: " + result.error, "bad");
+        }
+        fileInput.value = "";
+      };
+      reader.readAsText(file);
+    });
+    backupRow.appendChild(fileInput);
+    backupRow.appendChild(el("button", { class: "btn ghost", text: "📤 Import backup", onclick: () => fileInput.click() }));
+    backup.appendChild(backupRow);
+    viewEl.appendChild(backup);
 
     // Storage info note
     const info = el("div", { class: "card storage-info muted small" });
@@ -990,7 +1024,7 @@ window.Views = (function () {
         }}),
         el("button", { class: "btn ghost", text: "📱 Show QR", onclick: () => showQR(joinLink) }),
         navigator.share ? el("button", { class: "btn ghost", text: "↗ Share…", onclick: async () => {
-          try { await navigator.share({ title: "Mochi sync", text: "Open this on Mochi to sync our progress", url: joinLink }); }
+          try { await navigator.share({ title: "mumu sync", text: "Open this on mumu to sync our progress", url: joinLink }); }
           catch (e) {/* user cancelled */}
         }}) : null,
         el("button", { class: "btn ghost", text: "Force sync", onclick: () => window.Sync.pushNow() })
@@ -1208,7 +1242,7 @@ service cloud.firestore {
   function onboarding() {
     const wrap = el("div", { class: "lang-picker onboard" });
     wrap.appendChild(el("div", { class: "logo-mascot", text: "🍡", style:"font-size:64px;text-align:center;" }));
-    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Welcome to Mochi!" }));
+    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Welcome to mumu!" }));
     wrap.appendChild(el("div", { class: "muted center", text: "Pick a language to start. You can switch any time." }));
     Object.values(DATA_LANGS).forEach((meta) => {
       const item = el("button", { class: "lang-option", onclick: () => {
