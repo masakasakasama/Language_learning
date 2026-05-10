@@ -529,7 +529,18 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .dot-green  { background: var(--good); }
 
 .browse-card { position: relative; padding: 0; display: flex; flex-direction: column; cursor: default; overflow: hidden; }
-.browse-card-body { padding: 10px 8px 6px; background: transparent; border: none; cursor: pointer; }
+.browse-card-body {
+  padding: 10px 8px 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex: 1;                /* fill the card so the mark row is pinned to the bottom */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+}
 .browse-card.status-mastered { border-color: var(--good); }
 .browse-card.status-learning { border-color: var(--warn); }
 .browse-card.status-review   { border-color: var(--accent-2); }
@@ -543,6 +554,7 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 /* 3-button mark row at the bottom of each card */
 .mark-row {
   display: flex;
+  margin-top: auto;       /* always pinned to the bottom of the card */
   border-top: 1px dashed var(--border);
   background: var(--surface-2);
 }
