@@ -144,6 +144,13 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .nav-btn:hover { color: var(--text); }
 .nav-btn:active { transform: scale(0.94); }
 .nav-icon { font-size: 22px; line-height: 1; }
+.nav-icon-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
 .nav-btn.active { color: var(--accent); }
 .nav-btn.active .nav-icon { transform: scale(1.15); }
 .nav-badge {
