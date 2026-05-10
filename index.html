@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#ffd6e7" />
+  <title>Mochi - Language Learning</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍡%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar" id="topbar">
+      <div class="topbar-inner">
+        <button class="logo-btn" data-nav="home" aria-label="Home">
+          <span class="logo-mascot">🍡</span>
+          <span class="logo-text">Mochi</span>
+        </button>
+        <button class="lang-switcher" id="lang-switcher" aria-label="Switch language">
+          <span class="lang-flag" id="lang-flag">🇯🇵</span>
+          <span class="lang-name" id="lang-name">Japanese</span>
+          <span class="lang-chevron">▾</span>
+        </button>
+        <div class="stats">
+          <div class="stat-chip" title="Daily streak">
+            <span class="chip-icon">🔥</span>
+            <span class="chip-value" id="stat-streak">0</span>
+          </div>
+          <div class="stat-chip" title="Experience points">
+            <span class="chip-icon">⭐</span>
+            <span class="chip-value" id="stat-xp">0</span>
+          </div>
+          <div class="stat-chip" title="Hearts (lives)">
+            <span class="chip-icon">❤️</span>
+            <span class="chip-value" id="stat-hearts">5</span>
+          </div>
+          <div class="stat-chip" title="Cards due for review">
+            <span class="chip-icon">📚</span>
+            <span class="chip-value" id="stat-due">0</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="view"></main>
+
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-btn active" data-nav="home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Learn</span>
+      </button>
+      <button class="nav-btn" data-nav="review">
+        <span class="nav-icon">🔄</span>
+        <span class="nav-label">Review</span>
+        <span class="nav-badge hidden" id="nav-due-badge">0</span>
+      </button>
+      <button class="nav-btn" data-nav="browse">
+        <span class="nav-icon">📖</span>
+        <span class="nav-label">Browse</span>
+      </button>
+      <button class="nav-btn" data-nav="profile">
+        <span class="nav-icon">🧸</span>
+        <span class="nav-label">Me</span>
+      </button>
+    </nav>
+
+    <div class="toast-container" id="toast-container"></div>
+    <div class="confetti-container" id="confetti-container"></div>
+    <div class="modal-backdrop hidden" id="modal-backdrop"></div>
+  </div>
+
+  <!-- data: per-language content -->
+  <script src="js/data/languages.js"></script>
+  <script src="js/data/ja.js"></script>
+  <script src="js/data/ko.js"></script>
+  <script src="js/data/en.js"></script>
+  <script src="js/data/es.js"></script>
+
+  <!-- core -->
+  <script src="js/storage.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/srs.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/exercises.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
