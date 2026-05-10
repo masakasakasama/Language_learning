@@ -50,7 +50,7 @@ window.DATA_ES = (function () {
     "echar una mano":"eine Hand reichen","tomar el pelo":"jdn. auf den Arm nehmen",
     // C2 mastery
     "ubicuo":"allgegenwärtig","efímero":"vergänglich",
-    "recalcitrant":"widerspenstig","epitomar":"verkörpern"
+    "recalcitrante":"widerspenstig","epitomar":"verkörpern"
   };
 
   const VOCAB = {

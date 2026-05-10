@@ -151,7 +151,60 @@ window.DATA_JA = (function () {
     "臨機応変":"situativ angepasst",
     // common N5 still missing
     "あなた":"du / Sie","これ":"dies","それ":"das","あれ":"jenes","何":"was",
-    "本":"Buch","ペン":"Stift","映画":"Film","音楽":"Musik","花":"Blume","空":"Himmel"
+    "本":"Buch","ペン":"Stift","映画":"Film","音楽":"Musik","花":"Blume","空":"Himmel",
+    // missing N4 work
+    "仕事":"Arbeit / Job","社員":"Angestellte/r","お客様":"Kunde/Kundin",
+    "同僚":"Kollege/Kollegin","給料":"Gehalt","残業":"Überstunden",
+    // Kanji N5 (also overlap a few vocab; lookups always find the same key)
+    "日":"Tag / Sonne","月":"Mond / Monat","火":"Feuer","水":"Wasser","木":"Baum / Holz",
+    "金":"Gold / Geld","土":"Erde / Boden","人":"Person","山":"Berg","川":"Fluss",
+    "田":"Reisfeld","上":"oben","下":"unten","中":"Mitte","大":"groß","小":"klein",
+    "私":"ich","父":"Vater","母":"Mutter","子":"Kind",
+    "何":"was","時":"Zeit / Stunde","年":"Jahr","先":"voran","生":"Leben / Geburt",
+    "学":"lernen","校":"Schule","国":"Land","本":"Buch / Ursprung","行":"gehen",
+    // Kanji N4
+    "朝":"Morgen","昼":"Mittag","夜":"Nacht","週":"Woche","駅":"Bahnhof",
+    "銀":"Silber","病":"Krankheit","院":"Institution","旅":"Reise","地":"Erde / Boden",
+    // Kanji N3
+    "政":"Regierung","治":"regieren / heilen","経":"Durchgang","済":"abschließen",
+    "技":"Fertigkeit","術":"Technik","影":"Schatten","響":"Echo / Einfluss",
+    // Kanji N2
+    "契":"Versprechen","約":"Versprechen / etwa","責":"Verantwortung","任":"Pflicht",
+    "効":"Wirkung","率":"Rate / Verhältnis",
+    // Kanji N1
+    "概":"Umriss","念":"Gedanke","矛":"Hellebarde","盾":"Schild",
+    "顕":"prominent","著":"prominent / veröffentlichen","憂":"Besorgnis",
+    // N1 idioms (extra)
+    "四面楚歌":"von Feinden umzingelt","温故知新":"aus der Vergangenheit lernen",
+    "七転八起":"niemals aufgeben","弱肉強食":"das Recht des Stärkeren",
+    "自業自得":"selber schuld","大器晩成":"Spätzünder",
+    "不言実行":"Taten statt Worte","油断大敵":"Vorsicht ist die Mutter der Porzellankiste",
+    "切磋琢磨":"sich gegenseitig anspornen","朝令暮改":"ständig die Meinung ändern",
+    // N1 advanced verbs
+    "携わる":"beteiligt sein an","培う":"kultivieren / fördern",
+    "司る":"verwalten / leiten","抱える":"halten / belastet sein mit",
+    "試みる":"versuchen","強いる":"zwingen","帯びる":"annehmen / einen Anflug haben",
+    "醸す":"hervorrufen / brauen","凝る":"versessen sein / steif werden",
+    "偽る":"täuschen","怠る":"vernachlässigen","慕う":"verehren / sich sehnen",
+    "戒める":"ermahnen","賄う":"abdecken / versorgen","仰ぐ":"aufschauen zu / verehren",
+    "遮る":"unterbrechen / blockieren","据える":"aufstellen / einsetzen",
+    "損なう":"schaden / verderben","蘇る":"wiederbelebt werden","窺う":"spähen / Gelegenheit abwarten",
+    // N1 advanced nouns
+    "究極":"das Äußerste","抽象":"Abstraktion","具体":"das Konkrete",
+    "範囲":"Bereich / Umfang","兆候":"Anzeichen","偶然":"Zufall","必然":"Notwendigkeit",
+    "妥協":"Kompromiss","妥当":"angemessen / gültig","自負":"Stolz / Selbstvertrauen",
+    "危惧":"Befürchtung","措置":"Maßnahme","繁栄":"Wohlstand","衰退":"Niedergang",
+    "慎重":"vorsichtig","軽率":"unbesonnen","配慮":"Rücksichtnahme",
+    "秩序":"Ordnung","調和":"Harmonie","葛藤":"Konflikt","相互":"gegenseitig",
+    "弊害":"schädliche Wirkung","是正":"Korrektur","規範":"Norm","模範":"Vorbild",
+    "卓越":"Vortrefflichkeit","緻密":"akribisch","厳密":"streng / rigoros",
+    "潜在":"latent / potenziell","真摯":"aufrichtig",
+    // N1 nuanced expressions
+    "一概に":"pauschal","強いて":"unbedingt / mit Gewalt","何卒":"bitte sehr",
+    "あえて":"absichtlich / bewusst","軽々しく":"leichtfertig","一切":"überhaupt (nicht)",
+    "ひいては":"folglich / in Erweiterung","案の定":"wie erwartet",
+    "とりわけ":"besonders / vor allem","甚だ":"äußerst","ことごとく":"durch und durch",
+    "軒並み":"durchweg","何気なく":"beiläufig","ろくに":"(nicht) ordentlich"
   };
 
   const VOCAB = {
@@ -370,11 +423,94 @@ window.DATA_JA = (function () {
       ["顧みる","かえりみる","kaerimiru","to reflect on", [["過去を顧みます。", "I reflect on the past."]]]
     ]),
     idiomsN1: vocabCards("idioms-n1", "N1", [
-      ["猫の手も借りたい","ねこのてもかりたい","neko no te mo karitai","extremely busy (lit. want to borrow even a cat's paw)", [["仕事が多くて猫の手も借りたい。", "There's so much work I'd take any help."]]],
-      ["一石二鳥","いっせきにちょう","isseki nichou","two birds with one stone", [["これは一石二鳥です。", "This is two birds with one stone."]]],
-      ["十人十色","じゅうにんといろ","juunin toiro","to each their own", [["意見は十人十色です。", "Opinions vary from person to person."]]],
-      ["以心伝心","いしんでんしん","ishin denshin","heart-to-heart understanding", [["友達と以心伝心です。", "I have a deep understanding with my friend."]]],
-      ["臨機応変","りんきおうへん","rinki ouhen","adaptable to circumstances", [["臨機応変に対応します。", "I'll respond flexibly."]]]
+      ["猫の手も借りたい","ねこのてもかりたい","neko no te mo karitai","extremely busy"],
+      ["一石二鳥","いっせきにちょう","isseki nichou","two birds with one stone"],
+      ["十人十色","じゅうにんといろ","juunin toiro","to each their own"],
+      ["以心伝心","いしんでんしん","ishin denshin","heart-to-heart understanding"],
+      ["臨機応変","りんきおうへん","rinki ouhen","adaptable to circumstances"],
+      ["四面楚歌","しめんそか","shimensoka","surrounded by enemies"],
+      ["温故知新","おんこちしん","onkochishin","learning from the past"],
+      ["七転八起","しちてんはっき","shichiten hakki","never giving up"],
+      ["弱肉強食","じゃくにくきょうしょく","jakuniku kyoushoku","survival of the fittest"],
+      ["自業自得","じごうじとく","jigou jitoku","reaping what you sow"],
+      ["大器晩成","たいきばんせい","taiki bansei","late bloomer"],
+      ["不言実行","ふげんじっこう","fugen jikkou","actions speak louder than words"],
+      ["油断大敵","ゆだんたいてき","yudan taiteki","carelessness is the worst enemy"],
+      ["切磋琢磨","せっさたくま","sessa takuma","mutual improvement through friendly rivalry"],
+      ["朝令暮改","ちょうれいぼかい","chourei bokai","constantly changing one's orders"]
+    ]),
+    // N1: advanced verbs
+    advVerbsN1: vocabCards("adv-verbs-n1", "N1", [
+      ["携わる","たずさわる","tazusawaru","to be engaged in / involved with"],
+      ["培う","つちかう","tsuchikau","to cultivate / foster"],
+      ["司る","つかさどる","tsukasadoru","to govern / preside over"],
+      ["抱える","かかえる","kakaeru","to hold / be burdened with"],
+      ["試みる","こころみる","kokoromiru","to attempt"],
+      ["強いる","しいる","shiiru","to force / compel"],
+      ["帯びる","おびる","obiru","to take on / be tinged with"],
+      ["醸す","かもす","kamosu","to brew / give rise to"],
+      ["凝る","こる","koru","to be absorbed in / get stiff"],
+      ["偽る","いつわる","itsuwaru","to deceive"],
+      ["怠る","おこたる","okotaru","to neglect"],
+      ["慕う","したう","shitau","to adore / yearn for"],
+      ["戒める","いましめる","imashimeru","to admonish / warn"],
+      ["賄う","まかなう","makanau","to cover (cost) / provide"],
+      ["仰ぐ","あおぐ","aogu","to look up to / revere"],
+      ["遮る","さえぎる","saegiru","to interrupt / block"],
+      ["据える","すえる","sueru","to set / install"],
+      ["損なう","そこなう","sokonau","to harm / spoil"],
+      ["蘇る","よみがえる","yomigaeru","to revive / be resurrected"],
+      ["窺う","うかがう","ukagau","to peek / inquire / wait for an opportunity"]
+    ]),
+    // N1: advanced abstract nouns
+    advNounsN1: vocabCards("adv-nouns-n1", "N1", [
+      ["究極","きゅうきょく","kyuukyoku","ultimate / extreme"],
+      ["抽象","ちゅうしょう","chuushou","abstraction"],
+      ["具体","ぐたい","gutai","concreteness"],
+      ["範囲","はんい","han'i","scope / range"],
+      ["兆候","ちょうこう","choukou","sign / indication"],
+      ["偶然","ぐうぜん","guuzen","chance / coincidence"],
+      ["必然","ひつぜん","hitsuzen","inevitability"],
+      ["妥協","だきょう","dakyou","compromise"],
+      ["妥当","だとう","datou","appropriate / valid"],
+      ["自負","じふ","jifu","pride / self-confidence"],
+      ["危惧","きぐ","kigu","fear / concern"],
+      ["措置","そち","sochi","measure / step (taken)"],
+      ["繁栄","はんえい","han'ei","prosperity"],
+      ["衰退","すいたい","suitai","decline / decay"],
+      ["慎重","しんちょう","shinchou","cautious"],
+      ["軽率","けいそつ","keisotsu","careless / hasty"],
+      ["配慮","はいりょ","hairyo","consideration / care"],
+      ["秩序","ちつじょ","chitsujo","order / discipline"],
+      ["調和","ちょうわ","chouwa","harmony"],
+      ["葛藤","かっとう","kattou","conflict / struggle"],
+      ["相互","そうご","sougo","mutual / reciprocal"],
+      ["弊害","へいがい","heigai","harmful effect"],
+      ["是正","ぜせい","zesei","correction / rectification"],
+      ["規範","きはん","kihan","norm / standard"],
+      ["模範","もはん","mohan","model / example"],
+      ["卓越","たくえつ","takuetsu","excellence / preeminence"],
+      ["緻密","ちみつ","chimitsu","meticulous / detailed"],
+      ["厳密","げんみつ","genmitsu","strict / rigorous"],
+      ["潜在","せんざい","senzai","latent / potential"],
+      ["真摯","しんし","shinshi","sincere / earnest"]
+    ]),
+    // N1: nuanced adverbs/expressions
+    advExprN1: vocabCards("adv-expr-n1", "N1", [
+      ["一概に","いちがいに","ichigai ni","unconditionally / sweepingly"],
+      ["強いて","しいて","shiite","forcibly / daring to"],
+      ["何卒","なにとぞ","nanitozo","please / by all means"],
+      ["あえて","あえて","aete","daring to / venturing"],
+      ["軽々しく","かるがるしく","karugarushiku","carelessly / lightly"],
+      ["一切","いっさい","issai","entirely / not at all"],
+      ["ひいては","ひいては","hiitewa","by extension / consequently"],
+      ["案の定","あんのじょう","an no jou","just as expected"],
+      ["とりわけ","とりわけ","toriwake","especially / above all"],
+      ["甚だ","はなはだ","hanahada","very / exceedingly"],
+      ["ことごとく","ことごとく","kotogotoku","every single one"],
+      ["軒並み","のきなみ","nokinami","across the board"],
+      ["何気なく","なにげなく","nanigenaku","casually / unintentionally"],
+      ["ろくに","ろくに","roku ni","(not) properly / sufficiently"]
     ])
   };
 
@@ -391,6 +527,7 @@ window.DATA_JA = (function () {
       kun: it[1],
       on: it[2],
       en: it[3],
+      de: DE_VOCAB[it[0]] || "",
       front: it[0],
       back: it[3],
       hint: (it[1] ? "kun: " + it[1] : "") + (it[2] ? "  on: " + it[2] : ""),
@@ -526,9 +663,9 @@ window.DATA_JA = (function () {
       title: "これ・それ・あれ — this / that / over there",
       intro: "Three distance levels:\n• <b>これ</b> near me\n• <b>それ</b> near you\n• <b>あれ</b> far from both\n<b>どれ</b> = which one?",
       examples: [
-        { jp: "これは本です。", en: "This is a book.", breakdown: "これ + は + 本 + です" },
-        { jp: "それは何ですか。", en: "What is that (near you)?", breakdown: "それ + は + 何 + です + か" },
-        { jp: "あれは富士山です。", en: "That is Mt. Fuji.", breakdown: "あれ + は + 富士山 + です" }
+        { jp: "これは本です。", en: "This is a book.", de: "Das ist ein Buch.", breakdown: "これ + は + 本 + です" },
+        { jp: "それは何ですか。", en: "What is that (near you)?", de: "Was ist das?", breakdown: "それ + は + 何 + です + か" },
+        { jp: "あれは富士山です。", en: "That is Mt. Fuji.", de: "Das (dort) ist der Fuji.", breakdown: "あれ + は + 富士山 + です" }
       ],
       quiz: [
         { type: "mc", q: "Which means \"this\" (near me)?", choices: ["それ","あれ","これ","どれ"], answer: "これ" },
@@ -540,8 +677,8 @@ window.DATA_JA = (function () {
       title: "の — Possession",
       intro: "<b>A の B</b> = \"A's B\" or \"B of A\".",
       examples: [
-        { jp: "私の本", en: "my book", breakdown: "私 + の + 本" },
-        { jp: "日本の食べ物", en: "Japanese food", breakdown: "日本 + の + 食べ物" }
+        { jp: "私の本", en: "my book", de: "mein Buch", breakdown: "私 + の + 本" },
+        { jp: "日本の食べ物", en: "Japanese food", de: "japanisches Essen", breakdown: "日本 + の + 食べ物" }
       ],
       quiz: [
         { type: "mc", q: "How do you say \"my cat\"?", choices: ["私は猫","私の猫","私が猫","私を猫"], answer: "私の猫" },
@@ -553,8 +690,8 @@ window.DATA_JA = (function () {
       title: "を — Object marker",
       intro: "<b>を</b> (pronounced <i>o</i>) marks the direct object of an action verb.",
       examples: [
-        { jp: "ご飯を食べます。", en: "I eat rice.", breakdown: "ご飯 + を + 食べます" },
-        { jp: "本を読みます。", en: "I read a book.", breakdown: "本 + を + 読みます" }
+        { jp: "ご飯を食べます。", en: "I eat rice.", de: "Ich esse Reis.", breakdown: "ご飯 + を + 食べます" },
+        { jp: "本を読みます。", en: "I read a book.", de: "Ich lese ein Buch.", breakdown: "本 + を + 読みます" }
       ],
       quiz: [
         { type: "mc", q: "How is を pronounced as a particle?", choices: ["wo","o","u","yo"], answer: "o" },
@@ -566,8 +703,8 @@ window.DATA_JA = (function () {
       title: "ます-form — Polite verbs",
       intro: "Polite verbs end in <b>ます</b>:\n• 食べ<b>ます</b> — \"eat\"\n• 食べ<b>ません</b> — \"don't eat\"\n• 食べ<b>ました</b> — \"ate\"\n• 食べ<b>ませんでした</b> — \"didn't eat\"",
       examples: [
-        { jp: "毎日コーヒーを飲みます。", en: "I drink coffee every day.", breakdown: "毎日 + コーヒー + を + 飲みます" },
-        { jp: "肉を食べません。", en: "I don't eat meat.", breakdown: "肉 + を + 食べません" }
+        { jp: "毎日コーヒーを飲みます。", en: "I drink coffee every day.", de: "Ich trinke jeden Tag Kaffee.", breakdown: "毎日 + コーヒー + を + 飲みます" },
+        { jp: "肉を食べません。", en: "I don't eat meat.", de: "Ich esse kein Fleisch.", breakdown: "肉 + を + 食べません" }
       ],
       quiz: [
         { type: "mc", q: "Which means \"don't eat\"?", choices: ["食べます","食べません","食べました","食べませんでした"], answer: "食べません" },
@@ -579,8 +716,8 @@ window.DATA_JA = (function () {
       title: "に・で — Location particles",
       intro: "<b>に</b> = destination or where something <i>exists</i>.\n<b>で</b> = where an <i>action</i> happens.",
       examples: [
-        { jp: "学校に行きます。", en: "I go to school.", breakdown: "学校 + に + 行きます" },
-        { jp: "学校で勉強します。", en: "I study at school.", breakdown: "学校 + で + 勉強します" }
+        { jp: "学校に行きます。", en: "I go to school.", de: "Ich gehe zur Schule.", breakdown: "学校 + に + 行きます" },
+        { jp: "学校で勉強します。", en: "I study at school.", de: "Ich lerne in der Schule.", breakdown: "学校 + で + 勉強します" }
       ],
       quiz: [
         { type: "fill", q: "公園___犬がいます (There's a dog in the park)", choices: ["に","で","を","は"], answer: "に" },
@@ -594,9 +731,9 @@ window.DATA_JA = (function () {
       title: "て-form — connecting verbs",
       intro: "The <b>て-form</b> connects clauses, makes requests, and forms continuous tense.\n• 食べる → 食べ<b>て</b>\n• 飲む → 飲<b>んで</b>\n• 行く → 行<b>って</b>",
       examples: [
-        { jp: "ご飯を食べて、寝ます。", en: "I eat rice and (then) sleep.", breakdown: "食べ + て (and then) + 寝ます" },
-        { jp: "ちょっと待ってください。", en: "Please wait a moment.", breakdown: "待っ + て + ください (please)" },
-        { jp: "本を読んでいます。", en: "I'm reading a book.", breakdown: "読ん + で + います (-ing)" }
+        { jp: "ご飯を食べて、寝ます。", en: "I eat rice and (then) sleep.", de: "Ich esse Reis und schlafe (dann).", breakdown: "食べ + て (and then) + 寝ます" },
+        { jp: "ちょっと待ってください。", en: "Please wait a moment.", de: "Bitte warten Sie einen Moment.", breakdown: "待っ + て + ください (please)" },
+        { jp: "本を読んでいます。", en: "I'm reading a book.", de: "Ich lese gerade ein Buch.", breakdown: "読ん + で + います (-ing)" }
       ],
       quiz: [
         { type: "mc", q: "te-form of 食べる?", choices: ["食べて","食べた","食べって","食べんで"], answer: "食べて" },
@@ -608,8 +745,8 @@ window.DATA_JA = (function () {
       title: "より・の方が — Comparisons",
       intro: "<b>A より B の方が ...</b> = \"B is more ... than A\".",
       examples: [
-        { jp: "犬より猫の方が好きです。", en: "I like cats more than dogs.", breakdown: "犬 + より (than) + 猫 + の方が (more) + 好き" },
-        { jp: "東京より大阪の方が暑いです。", en: "Osaka is hotter than Tokyo." }
+        { jp: "犬より猫の方が好きです。", en: "I like cats more than dogs.", de: "Ich mag Katzen lieber als Hunde.", breakdown: "犬 + より (than) + 猫 + の方が (more) + 好き" },
+        { jp: "東京より大阪の方が暑いです。", en: "Osaka is hotter than Tokyo.", de: "Osaka ist heißer als Tokio." }
       ],
       quiz: [
         { type: "mc", q: "What does より mean?", choices: ["more","than","also","too"], answer: "than" }
@@ -622,8 +759,8 @@ window.DATA_JA = (function () {
       title: "〜たら — \"if / when\"",
       intro: "Add <b>〜たら</b> to the past form to express a conditional. \"If/when X happens, then Y.\"",
       examples: [
-        { jp: "雨が降ったら、家にいます。", en: "If it rains, I'll stay home.", breakdown: "降っ + たら + 家にいます" },
-        { jp: "お金があったら、旅行します。", en: "If I had money, I'd travel." }
+        { jp: "雨が降ったら、家にいます。", en: "If it rains, I'll stay home.", de: "Wenn es regnet, bleibe ich zu Hause.", breakdown: "降っ + たら + 家にいます" },
+        { jp: "お金があったら、旅行します。", en: "If I had money, I'd travel.", de: "Wenn ich Geld hätte, würde ich reisen." }
       ],
       quiz: [
         { type: "mc", q: "〜たら attaches to which form?", choices: ["dictionary","past (た) form","te-form","ます-stem"], answer: "past (た) form" }
@@ -634,7 +771,7 @@ window.DATA_JA = (function () {
       title: "Passive form (〜られる)",
       intro: "Verbs become passive with <b>〜(ら)れる</b>:\n• 見る → 見<b>られる</b>\n• 食べる → 食べ<b>られる</b>\n• 飲む → 飲<b>まれる</b>",
       examples: [
-        { jp: "ケーキは弟に食べられた。", en: "The cake was eaten by my brother.", breakdown: "ケーキ + は + 弟 + に (by) + 食べられた" }
+        { jp: "ケーキは弟に食べられた。", en: "The cake was eaten by my brother.", de: "Der Kuchen wurde von meinem kleinen Bruder gegessen.", breakdown: "ケーキ + は + 弟 + に (by) + 食べられた" }
       ],
       quiz: [
         { type: "mc", q: "Passive of 飲む?", choices: ["飲まれる","飲める","飲ませる","飲んで"], answer: "飲まれる" }
@@ -647,8 +784,8 @@ window.DATA_JA = (function () {
       title: "敬語 — Respectful & humble speech",
       intro: "Two main forms beyond plain polite:\n• <b>尊敬語</b> elevates the listener (お/ご + 〜になる, special verbs like いらっしゃる)\n• <b>謙譲語</b> humbles the speaker (お/ご + 〜する, 申す, 致す, 参る)",
       examples: [
-        { jp: "社長はもう帰られました。", en: "The president has already gone home. (respectful)" },
-        { jp: "明日、お電話いたします。", en: "I will call you tomorrow. (humble)" }
+        { jp: "社長はもう帰られました。", en: "The president has already gone home. (respectful)", de: "Der Präsident ist bereits nach Hause gegangen. (respektvoll)" },
+        { jp: "明日、お電話いたします。", en: "I will call you tomorrow. (humble)", de: "Ich werde Sie morgen anrufen. (bescheiden)" }
       ],
       quiz: [
         { type: "mc", q: "Which is humble (謙譲語)?", choices: ["いらっしゃる","召し上がる","参る","ご覧になる"], answer: "参る" }
@@ -661,7 +798,7 @@ window.DATA_JA = (function () {
       title: "〜に即して — \"in conformity with\"",
       intro: "<b>〜に即して</b> means \"in line with / according to\" — used in formal/legal contexts.",
       examples: [
-        { jp: "規則に即して処理します。", en: "We will handle it according to the rules." }
+        { jp: "規則に即して処理します。", en: "We will handle it according to the rules.", de: "Wir bearbeiten es gemäß den Regeln." }
       ],
       quiz: [
         { type: "mc", q: "Best translation of に即して?", choices: ["according to","in spite of","because of","as if"], answer: "according to" }
@@ -931,7 +1068,34 @@ window.DATA_JA = (function () {
     {
       id: "ja-u-idiom-n1", level: "N1", title: "Idioms (四字熟語)", icon: "🌸", color: "#ddd6fe",
       lessons: [
-        lesson("ja-l-idiom-v", "Idiomatic expressions", "flashcards", { cards: VOCAB.idiomsN1 })
+        lesson("ja-l-idiom-v",  "Common idioms",   "flashcards", { cards: VOCAB.idiomsN1.slice(0, 8) }),
+        lesson("ja-l-idiom-v2", "More idioms",     "flashcards", { cards: VOCAB.idiomsN1.slice(8) }),
+        lesson("ja-l-idiom-q",  "Idioms quiz",     "quiz",       { cards: VOCAB.idiomsN1 })
+      ]
+    },
+    {
+      id: "ja-u-adv-verbs-n1", level: "N1", title: "Advanced verbs", icon: "🎯", color: "#fde68a",
+      lessons: [
+        lesson("ja-l-adv-v1", "Advanced verbs (1)", "flashcards", { cards: VOCAB.advVerbsN1.slice(0, 10) }),
+        lesson("ja-l-adv-v2", "Advanced verbs (2)", "flashcards", { cards: VOCAB.advVerbsN1.slice(10) }),
+        lesson("ja-l-adv-vq", "Verbs quiz",         "quiz",       { cards: VOCAB.advVerbsN1 })
+      ]
+    },
+    {
+      id: "ja-u-adv-nouns-n1", level: "N1", title: "Advanced nouns", icon: "🧠", color: "#bbf7d0",
+      lessons: [
+        lesson("ja-l-adv-n1", "Abstract nouns (1)", "flashcards", { cards: VOCAB.advNounsN1.slice(0, 10) }),
+        lesson("ja-l-adv-n2", "Abstract nouns (2)", "flashcards", { cards: VOCAB.advNounsN1.slice(10, 20) }),
+        lesson("ja-l-adv-n3", "Abstract nouns (3)", "flashcards", { cards: VOCAB.advNounsN1.slice(20) }),
+        lesson("ja-l-adv-nq", "Nouns quiz",         "quiz",       { cards: VOCAB.advNounsN1 })
+      ]
+    },
+    {
+      id: "ja-u-adv-expr-n1", level: "N1", title: "Nuanced expressions", icon: "✨", color: "#bae6fd",
+      lessons: [
+        lesson("ja-l-adv-e1", "Adverbs & particles", "flashcards", { cards: VOCAB.advExprN1.slice(0, 7) }),
+        lesson("ja-l-adv-e2", "More expressions",    "flashcards", { cards: VOCAB.advExprN1.slice(7) }),
+        lesson("ja-l-adv-eq", "Expressions quiz",    "quiz",       { cards: VOCAB.advExprN1 })
       ]
     },
     {
