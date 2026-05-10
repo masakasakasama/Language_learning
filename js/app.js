@@ -55,14 +55,14 @@ window.App = (function () {
     document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.nav === name));
   }
 
-  function go(view) {
+  function go(view, opts) {
     currentView = view;
     const v = document.getElementById("view");
     v.scrollTop = 0;
     setActiveNav(view);
     if (view === "home") Views.home(v);
     else if (view === "review") Views.review(v);
-    else if (view === "browse") Views.browse(v);
+    else if (view === "browse") Views.browse(v, opts);
     else if (view === "profile") Views.profile(v);
     refreshTopbar();
   }

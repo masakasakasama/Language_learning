@@ -489,6 +489,44 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .bc-back  { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .bc-hint  { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
+/* Browse filter chips */
+.filter-row { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px; }
+.filter-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: 600; font-size: 12px; white-space: nowrap;
+  color: var(--muted);
+}
+.filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+.browse-summary { margin-bottom: 10px; padding: 0 4px; }
+
+/* Status dots */
+.status-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--bg-2); }
+.dot-gray   { background: #cbd5e1; }
+.dot-blue   { background: #7dd3fc; }
+.dot-orange { background: #fb923c; }
+.dot-yellow { background: #fcd34d; }
+.dot-green  { background: var(--good); }
+
+.browse-card { position: relative; }
+.browse-card.status-mastered { border-color: var(--good); }
+.browse-card.status-learning { border-color: var(--warn); }
+.browse-card.status-review   { border-color: var(--accent-2); }
+.browse-card.status-new      { border-color: var(--accent-2); }
+
+/* Word detail modal */
+.word-detail { display: flex; flex-direction: column; gap: 10px; padding: 4px; align-items: stretch; text-align: center; }
+.wd-front { font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif; font-size: 56px; font-weight: 700; line-height: 1; }
+.wd-kana { font-size: 18px; color: var(--muted); }
+.wd-romaji { font-size: 13px; color: var(--muted); font-style: italic; }
+.wd-back { font-size: 18px; font-weight: 600; }
+.wd-hint { color: var(--muted); font-size: 12px; }
+.wd-status { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; margin-top: 4px; text-align: left; }
+.wd-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.wd-row:last-child { border: none; }
+
 /* Stats */
 .stat-today, .stat-chart, .stat-heat, .stat-cum {
   background: var(--surface);

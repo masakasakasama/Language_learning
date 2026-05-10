@@ -110,6 +110,29 @@ window.Storage = (function () {
     langState(lang).lessonsCompleted[lessonId] = true; save();
   }
 
+  // Erase a card's progress completely:
+  // - removes its SRS state
+  // - removes it from the "learned" set
+  // Useful when the user tapped through too quickly or marked something
+  // they don't actually know.
+  function forgetCard(cardId, lang) {
+    const st = langState(lang);
+    if (st.cards && st.cards[cardId]) delete st.cards[cardId];
+    if (st.learned && st.learned[cardId]) delete st.learned[cardId];
+    save();
+  }
+
+  // Card status helpers (purely derived from SRS state)
+  function cardStatus(cardId, lang) {
+    const st = langState(lang).cards[cardId];
+    if (!st) {
+      return langState(lang).learned[cardId] ? "new" : "untouched";
+    }
+    if (st.interval >= 21) return "mastered";
+    if (st.interval > 0) return "review";
+    return "learning";
+  }
+
   // XP and stats
   function addXP(amount, lang) {
     const root = load();
@@ -209,7 +232,7 @@ window.Storage = (function () {
     load, save, reload, reset, todayStr,
     getLang, setLang, langState,
     getCard, setCard,
-    isLearned, markLearned, learnedSet,
+    isLearned, markLearned, learnedSet, forgetCard, cardStatus,
     lessonDone, markLessonDone,
     addXP, recordStudyTime, recordCard, recordLesson,
     bumpStreak, getStats, getStreak, getXPTotal,

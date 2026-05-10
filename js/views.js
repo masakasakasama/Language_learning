@@ -352,17 +352,41 @@ window.Views = (function () {
   }
 
   // ─────────────── BROWSE ───────────────
-  function browse(viewEl) {
+  // Browse takes optional opts: { initialFilter, initialLevel }
+  function browse(viewEl, opts) {
     clear(viewEl);
     const lang = Storage.getLang();
     const meta = getLangMeta(lang);
     const pack = getLangPack(lang);
+    opts = opts || {};
 
     viewEl.appendChild(el("div", { class: "view-title", text: meta.nativeName + " — Browse" }));
 
-    // tabs by level
+    // Status filter chips
+    const filters = [
+      { id: "all",       label: "All",         desc: "Everything in this level" },
+      { id: "learned",   label: "Learned",     desc: "Cards you've seen at least once" },
+      { id: "learning",  label: "Learning",    desc: "Still in early SRS intervals" },
+      { id: "mastered",  label: "Mastered",    desc: "Interval ≥ 21 days" },
+      { id: "untouched", label: "Not started", desc: "Never reviewed" }
+    ];
+    let activeFilter = opts.initialFilter || "all";
+    const filterRow = el("div", { class: "filter-row" });
+    filters.forEach((f) => {
+      const chip = el("button", { class: "filter-chip" + (f.id === activeFilter ? " active" : ""), text: f.label, title: f.desc });
+      chip.onclick = () => {
+        activeFilter = f.id;
+        filterRow.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+        renderLevel();
+      };
+      filterRow.appendChild(chip);
+    });
+    viewEl.appendChild(filterRow);
+
+    // Level tabs
     const tabs = el("div", { class: "level-tabs" });
-    let activeLevel = meta.levels[0].id;
+    let activeLevel = opts.initialLevel || meta.levels[0].id;
     meta.levels.forEach((lv) => {
       const tab = el("button", { class: "level-tab" + (lv.id === activeLevel ? " active" : ""), text: lv.name, style: `--lc:${lv.color}` });
       tab.onclick = () => {
@@ -375,41 +399,130 @@ window.Views = (function () {
     });
     viewEl.appendChild(tabs);
 
+    // Summary
+    const summary = el("div", { class: "muted small browse-summary" });
+    viewEl.appendChild(summary);
+
     const list = el("div");
     viewEl.appendChild(list);
+
+    function passesFilter(c) {
+      const status = Storage.cardStatus(c.id, lang);
+      if (activeFilter === "all") return true;
+      if (activeFilter === "learned") return status !== "untouched";
+      if (activeFilter === "learning") return status === "learning" || status === "new";
+      if (activeFilter === "mastered") return status === "mastered";
+      if (activeFilter === "untouched") return status === "untouched";
+      return true;
+    }
+
+    function statusDot(status) {
+      const map = {
+        untouched: { c: "dot-gray",   t: "Not started" },
+        new:       { c: "dot-blue",   t: "New" },
+        learning:  { c: "dot-orange", t: "Learning" },
+        review:    { c: "dot-yellow", t: "Reviewing" },
+        mastered:  { c: "dot-green",  t: "Mastered" }
+      }[status] || { c: "dot-gray", t: status };
+      return el("span", { class: "status-dot " + map.c, title: map.t });
+    }
 
     function renderLevel() {
       clear(list);
       const units = pack.UNITS.filter((u) => u.level === activeLevel);
       if (!units.length) {
         list.appendChild(el("div", { class: "muted center", text: "No content for this level yet." }));
+        summary.textContent = "";
         return;
       }
+      let totalShown = 0, totalAll = 0;
       units.forEach((unit) => {
-        const block = el("div", { class: "browse-unit card" });
-        block.appendChild(el("div", { class: "browse-unit-head" }, [
-          el("div", { class: "unit-icon small", text: unit.icon, style: `background:${unit.color}` }),
-          el("div", { class: "browse-unit-title", text: unit.title })
-        ]));
-        // Pull all unique cards across lessons
+        // unique cards across lessons
         const cardsSet = new Map();
         unit.lessons.forEach((l) => (l.cards || []).forEach((c) => cardsSet.set(c.id, c)));
         const cards = [...cardsSet.values()];
+        totalAll += cards.length;
+        const filtered = cards.filter(passesFilter);
+        if (!filtered.length) return;
+        totalShown += filtered.length;
+
+        const block = el("div", { class: "browse-unit card" });
+        block.appendChild(el("div", { class: "browse-unit-head" }, [
+          el("div", { class: "unit-icon small", text: unit.icon, style: `background:${unit.color}` }),
+          el("div", { class: "browse-unit-title", text: unit.title }),
+          el("div", { class: "muted small", style: "margin-left:auto;", text: filtered.length + "/" + cards.length })
+        ]));
+
         const grid = el("div", { class: "browse-grid" });
-        cards.forEach((c) => {
-          const known = !!Storage.getCard(c.id, lang);
-          const item = el("button", { class: "browse-card " + (known ? "known" : ""), onclick: () => App.speak(c.speakText) }, [
-            el("div", { class: "bc-front", text: c.front || c.jp }),
-            el("div", { class: "bc-back",  text: c.back  || c.en }),
-            c.kana && c.kana !== c.front ? el("div", { class: "bc-hint", text: c.kana }) : null
-          ]);
+        filtered.forEach((c) => {
+          const status = Storage.cardStatus(c.id, lang);
+          const item = el("button", { class: "browse-card status-" + status });
+          item.appendChild(statusDot(status));
+          item.appendChild(el("div", { class: "bc-front", text: c.front || c.jp }));
+          item.appendChild(el("div", { class: "bc-back", text: c.back || c.en }));
+          if (c.kana && c.kana !== c.front) item.appendChild(el("div", { class: "bc-hint", text: c.kana }));
+          item.onclick = () => showWordDetail(c, lang, () => renderLevel());
           grid.appendChild(item);
         });
         block.appendChild(grid);
         list.appendChild(block);
       });
+      summary.textContent = `Showing ${totalShown} of ${totalAll} cards · ${activeFilter}`;
     }
     renderLevel();
+  }
+
+  function showWordDetail(card, lang, onChange) {
+    const status = Storage.cardStatus(card.id, lang);
+    const srs = Storage.getCard(card.id, lang);
+    const wrap = el("div", { class: "word-detail" });
+
+    wrap.appendChild(el("div", { class: "wd-front", text: card.front || card.jp }));
+    if (card.kana && card.kana !== card.front) wrap.appendChild(el("div", { class: "wd-kana", text: card.kana }));
+    if (card.romaji && card.romaji !== card.kana) wrap.appendChild(el("div", { class: "wd-romaji", text: card.romaji }));
+    wrap.appendChild(el("div", { class: "wd-back", text: card.back || card.en }));
+    if (card.hint) wrap.appendChild(el("div", { class: "wd-hint", text: card.hint }));
+
+    wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));
+
+    // Status panel
+    const statusBlock = el("div", { class: "wd-status" });
+    const statusLabel = {
+      untouched: "Not started",
+      new: "New (just introduced)",
+      learning: "Learning",
+      review: "In review rotation",
+      mastered: "Mastered ✨"
+    }[status] || status;
+    statusBlock.appendChild(el("div", { class: "wd-row" }, [el("span", { text: "Status" }), el("b", { text: statusLabel })]));
+    if (srs) {
+      const due = new Date(srs.due);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const days = Math.round((due - today) / 86400000);
+      const dueText = days <= 0 ? "today" : (days + " day" + (days === 1 ? "" : "s"));
+      statusBlock.appendChild(el("div", { class: "wd-row" }, [el("span", { text: "Next review" }), el("b", { text: dueText })]));
+      statusBlock.appendChild(el("div", { class: "wd-row" }, [el("span", { text: "Interval" }), el("b", { text: srs.interval + " day" + (srs.interval === 1 ? "" : "s") })]));
+      statusBlock.appendChild(el("div", { class: "wd-row" }, [el("span", { text: "Reps" }), el("b", { text: String(srs.reps) })]));
+      statusBlock.appendChild(el("div", { class: "wd-row" }, [el("span", { text: "Lapses" }), el("b", { text: String(srs.lapses) })]));
+      statusBlock.appendChild(el("div", { class: "wd-row" }, [el("span", { text: "Ease" }), el("b", { text: srs.ease.toFixed(2) })]));
+    }
+    wrap.appendChild(statusBlock);
+
+    // Forget button — only meaningful if there is something to forget
+    if (status !== "untouched") {
+      const forgetBtn = el("button", { class: "btn warn big", text: "🗑 Forget this word", onclick: () => {
+        if (!confirm("Forget \"" + (card.front || card.jp) + "\"? Its SRS progress will be cleared and it will reappear as new.")) return;
+        Storage.forgetCard(card.id, lang);
+        UI.closeModal();
+        UI.toast("Removed from learned set", "good");
+        if (onChange) onChange();
+        App.refreshTopbar();
+      }});
+      wrap.appendChild(forgetBtn);
+    }
+
+    wrap.appendChild(el("button", { class: "btn ghost", text: "Close", onclick: () => UI.closeModal() }));
+    UI.modal(wrap);
   }
 
   // ─────────────── PROFILE / STATS ───────────────
@@ -511,6 +624,11 @@ window.Views = (function () {
     lg.appendChild(statBlock("Mastered", mastered));
     learnCard.appendChild(lg);
     learnCard.appendChild(progressBar((seen / pack.ALL_CARDS.length) * 100, `linear-gradient(90deg, ${meta.color}, #7dd3fc)`));
+    const wordLinks = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;" }, [
+      el("button", { class: "btn ghost", text: "📖 Show learned", onclick: () => App.go("browse", { initialFilter: "learned" }) }),
+      el("button", { class: "btn ghost", text: "🌟 Show mastered", onclick: () => App.go("browse", { initialFilter: "mastered" }) })
+    ]);
+    learnCard.appendChild(wordLinks);
     viewEl.appendChild(learnCard);
 
     // Cloud sync
