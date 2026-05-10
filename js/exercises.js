@@ -89,7 +89,7 @@ window.Exercises = (function () {
             if (b.textContent === ex.answer) b.classList.add("correct");
           });
         }
-        showFeedback(wrap, correct, ex.answer, () => onAnswer(correct));
+        showFeedback(wrap, correct, ex.answer, () => onAnswer(correct), ex.card && ex.card.de);
       };
       choicesEl.appendChild(btn);
     });
@@ -168,11 +168,16 @@ window.Exercises = (function () {
     container.appendChild(wrap);
   }
 
-  function showFeedback(wrap, correct, answer, cb) {
+  function showFeedback(wrap, correct, answer, cb, deAnswer) {
     const fb = el("div", { class: "ex-feedback " + (correct ? "good" : "bad") });
-    fb.innerHTML = correct
-      ? `<div class="fb-icon">✨</div><div class="fb-text">Nice!</div>`
-      : `<div class="fb-icon">😿</div><div class="fb-text">Correct: <b>${answer}</b></div>`;
+    let body;
+    if (correct) body = `<div class="fb-icon">✨</div><div class="fb-text">Nice!</div>`;
+    else {
+      let txt = `<b>${answer}</b>`;
+      if (deAnswer) txt += ` <span class="tr-de inline">${deAnswer}</span>`;
+      body = `<div class="fb-icon">😿</div><div class="fb-text">Correct: ${txt}</div>`;
+    }
+    fb.innerHTML = body;
     const cont = el("button", { class: "btn " + (correct ? "primary" : "warn") + " big", text: "Continue" });
     cont.onclick = cb;
     fb.appendChild(cont);
@@ -191,7 +196,10 @@ window.Exercises = (function () {
     if (card.romaji && card.romaji !== card.kana) {
       wrap.appendChild(el("div", { class: "intro-romaji", text: card.romaji }));
     }
-    wrap.appendChild(el("div", { class: "intro-en", text: card.back || card.en }));
+    wrap.appendChild(el("div", { class: "intro-en" }, [
+      el("span", { class: "tr-en", text: card.back || card.en }),
+      card.de ? el("span", { class: "tr-de", text: card.de }) : null
+    ]));
 
     if (card.hint) {
       wrap.appendChild(el("div", { class: "intro-hint", text: card.hint }));
@@ -239,6 +247,7 @@ window.Exercises = (function () {
       ]);
       item.appendChild(row);
       item.appendChild(el("div", { class: "grammar-ex-en", text: e.en }));
+      if (e.de) item.appendChild(el("div", { class: "grammar-ex-en tr-de", text: e.de }));
       if (e.breakdown) item.appendChild(el("div", { class: "grammar-ex-bd", text: e.breakdown }));
       wrap.appendChild(item);
     });

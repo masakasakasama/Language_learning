@@ -8,14 +8,31 @@ window.DATA_EN = (function () {
       level,
       deck,
       type: "vocab",
-      jp: it[0],         // English word (kept in `jp` field for UI consistency)
-      kana: it[1] || "", // IPA
+      jp: it[0],
+      kana: it[1] || "",
       romaji: it[1] || "",
-      en: it[2],         // translation/explanation in user's first language (kept English fallback)
+      en: it[2],
+      de: DE_VOCAB[it[0]] || "",
       front: it[0], back: it[2], hint: it[1] || "",
       speakText: it[0]
     }));
   }
+  const DE_VOCAB = {
+    "hello":"hallo","hi":"hi","good morning":"guten Morgen","good evening":"guten Abend",
+    "good night":"gute Nacht","goodbye":"auf Wiedersehen","thank you":"danke",
+    "sorry":"Entschuldigung","please":"bitte","yes":"ja","no":"nein",
+    "I":"ich","you":"du / Sie","he":"er","she":"sie","it":"es","we":"wir","they":"sie (Pl.)",
+    "one":"eins","two":"zwei","three":"drei","four":"vier","five":"fünf",
+    "six":"sechs","seven":"sieben","eight":"acht","nine":"neun","ten":"zehn",
+    "mother":"Mutter","father":"Vater","sister":"Schwester","brother":"Bruder",
+    "son":"Sohn","daughter":"Tochter","family":"Familie","friend":"Freund/in",
+    "water":"Wasser","bread":"Brot","rice":"Reis","apple":"Apfel","egg":"Ei",
+    "milk":"Milch","coffee":"Kaffee","tea":"Tee","fish":"Fisch",
+    "to be":"sein","to have":"haben","to eat":"essen","to drink":"trinken",
+    "to go":"gehen","to come":"kommen","to see":"sehen","to like":"mögen",
+    "big":"groß","small":"klein","good":"gut","bad":"schlecht","happy":"glücklich",
+    "sad":"traurig","hot":"heiß","cold":"kalt"
+  };
 
   const VOCAB = {
     // ── A1 ──

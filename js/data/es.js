@@ -8,10 +8,30 @@ window.DATA_ES = (function () {
       deck,
       type: "vocab",
       jp: it[0], kana: it[1] || "", romaji: it[1] || "", en: it[2],
+      de: DE_VOCAB[it[0]] || "",
       front: it[0], back: it[2], hint: it[1] || "",
       speakText: it[0]
     }));
   }
+  const DE_VOCAB = {
+    "hola":"hallo","buenos días":"guten Morgen","buenas tardes":"guten Tag (nachmittags)",
+    "buenas noches":"guten Abend / gute Nacht","adiós":"auf Wiedersehen",
+    "hasta luego":"bis später","gracias":"danke","por favor":"bitte",
+    "perdón":"Entschuldigung","sí":"ja","no":"nein",
+    "yo":"ich","tú":"du","usted":"Sie (höflich)","él":"er","ella":"sie",
+    "nosotros":"wir","vosotros":"ihr (Spanien)","ellos":"sie (Pl.)",
+    "uno":"eins","dos":"zwei","tres":"drei","cuatro":"vier","cinco":"fünf",
+    "seis":"sechs","siete":"sieben","ocho":"acht","nueve":"neun","diez":"zehn",
+    "familia":"Familie","padre":"Vater","madre":"Mutter","hermano":"Bruder",
+    "hermana":"Schwester","hijo":"Sohn","hija":"Tochter","amigo":"Freund","amiga":"Freundin",
+    "perro":"Hund","gato":"Katze",
+    "agua":"Wasser","pan":"Brot","leche":"Milch","café":"Kaffee","té":"Tee",
+    "arroz":"Reis","manzana":"Apfel","huevo":"Ei","pescado":"Fisch","queso":"Käse",
+    "ser":"sein (Eigenschaft)","estar":"sein (Zustand)","tener":"haben","comer":"essen",
+    "beber":"trinken","ir":"gehen","venir":"kommen","ver":"sehen","hablar":"sprechen","leer":"lesen",
+    "grande":"groß","pequeño":"klein","bueno":"gut","malo":"schlecht","bonito":"hübsch",
+    "feo":"hässlich","caliente":"heiß","frío":"kalt","feliz":"glücklich","triste":"traurig"
+  };
 
   const VOCAB = {
     // ── A1 ──

@@ -45,15 +45,41 @@ window.DATA_KO = (function () {
       level,
       deck,
       type: "vocab",
-      jp: it[0],            // store native word in `jp` field for UI consistency
-      kana: it[1],          // romanization
+      jp: it[0],
+      kana: it[1],
       romaji: it[1],
       en: it[2],
+      de: DE_VOCAB[it[0]] || "",
       ex: it[3] || [],
       front: it[0], back: it[2], hint: it[1],
       speakText: it[0]
     }));
   }
+  const DE_VOCAB = {
+    "안녕하세요":"hallo (höflich)","안녕":"hallo (informell)",
+    "감사합니다":"danke (höflich)","고마워요":"danke","죄송합니다":"es tut mir leid (höflich)",
+    "미안해요":"Entschuldigung","네":"ja","아니요":"nein",
+    "안녕히 가세요":"auf Wiedersehen (zur abreisenden Person)",
+    "안녕히 계세요":"auf Wiedersehen (zur bleibenden Person)",
+    "반갑습니다":"freut mich",
+    "저":"ich (höflich)","나":"ich (informell)","당신":"du / Sie","이름":"Name",
+    "사람":"Person","친구":"Freund/in","선생님":"Lehrer/in","학생":"Schüler/Student",
+    "한국":"Korea","미국":"Amerika","일본":"Japan",
+    "하나":"eins","둘":"zwei","셋":"drei","넷":"vier","다섯":"fünf",
+    "일":"eins (sino)","이":"zwei (sino)","삼":"drei (sino)","사":"vier (sino)","오":"fünf (sino)",
+    "가족":"Familie","아버지":"Vater","어머니":"Mutter","형":"älterer Bruder (m)",
+    "오빠":"älterer Bruder (f)","누나":"ältere Schwester (m)","언니":"ältere Schwester (f)",
+    "동생":"jüngeres Geschwister","아이":"Kind","강아지":"Welpe","고양이":"Katze",
+    "물":"Wasser","밥":"Reis / Mahlzeit","빵":"Brot","김치":"Kimchi","라면":"Ramyeon",
+    "커피":"Kaffee","차":"Tee","사과":"Apfel","고기":"Fleisch","맛있다":"lecker",
+    "월요일":"Montag","화요일":"Dienstag","수요일":"Mittwoch","목요일":"Donnerstag",
+    "금요일":"Freitag","토요일":"Samstag","일요일":"Sonntag",
+    "오늘":"heute","내일":"morgen","어제":"gestern",
+    "가다":"gehen","오다":"kommen","먹다":"essen","마시다":"trinken","보다":"sehen",
+    "듣다":"hören","하다":"machen","사다":"kaufen","자다":"schlafen","좋아하다":"mögen",
+    "크다":"groß","작다":"klein","좋다":"gut","나쁘다":"schlecht","예쁘다":"hübsch",
+    "귀엽다":"süß","맛있다":"schmackhaft","덥다":"heiß","춥다":"kalt","재미있다":"interessant"
+  };
 
   const VOCAB = {
     // ── TOPIK 1 ──

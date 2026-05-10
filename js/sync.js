@@ -213,7 +213,11 @@ function startListening() {
   });
 }
 
-// ─────────────── Auth (anonymous in code mode, Google in user mode) ───────────────
+// ─────────────── Init / Auth ───────────────
+// In "code" mode we DO NOT require any sign-in. The sync code is the shared
+// secret; Firestore rules should permit access to /sync/{code}/* (test mode does
+// this by default for 30 days; the README has a permanent rule).
+// In "user" mode we rely on Google sign-in below.
 function ensureFirebaseInit() {
   const cfg = getCfg();
   if (!cfg) return false;
@@ -221,27 +225,30 @@ function ensureFirebaseInit() {
     app = getApps().length ? getApp() : initializeApp(cfg);
     auth = getAuth(app);
     db = getFirestore(app);
-    onAuthStateChanged(auth, (user) => {
-      currentUser = user || null;
-      if (user) {
-        syncEnabled = true;
-        setStatus("connecting");
-        startListening();
-      } else {
-        // For code mode: try anon sign-in automatically
-        if (getMode() === "code") {
-          signInAnonymously(auth).catch((e) => {
-            console.warn("[sync] anon sign-in failed", e);
-            setStatus("error", e.message);
-          });
-          return;
+    if (getMode() === "code") {
+      // No auth needed — connect immediately.
+      syncEnabled = true;
+      startListening();
+      setStatus("connecting");
+    } else {
+      onAuthStateChanged(auth, (user) => {
+        currentUser = user || null;
+        if (user) {
+          syncEnabled = true;
+          setStatus("connecting");
+          startListening();
+        } else {
+          syncEnabled = false;
+          if (unsub) { unsub(); unsub = null; }
+          setStatus("signed-out");
         }
-        syncEnabled = false;
-        if (unsub) { unsub(); unsub = null; }
-        setStatus("signed-out");
-      }
-      window.dispatchEvent(new CustomEvent("mochi:auth-changed"));
-    });
+        window.dispatchEvent(new CustomEvent("mochi:auth-changed"));
+      });
+    }
+  } else if (getMode() === "code") {
+    // Already initialized — restart listener for the (possibly new) code
+    syncEnabled = true;
+    startListening();
   }
   return true;
 }

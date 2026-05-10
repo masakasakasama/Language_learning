@@ -460,6 +460,7 @@ window.Views = (function () {
           item.appendChild(statusDot(status));
           item.appendChild(el("div", { class: "bc-front", text: c.front || c.jp }));
           item.appendChild(el("div", { class: "bc-back", text: c.back || c.en }));
+          if (c.de) item.appendChild(el("div", { class: "bc-back tr-de", text: c.de }));
           if (c.kana && c.kana !== c.front) item.appendChild(el("div", { class: "bc-hint", text: c.kana }));
           item.onclick = () => showWordDetail(c, lang, () => renderLevel());
           grid.appendChild(item);
@@ -480,7 +481,10 @@ window.Views = (function () {
     wrap.appendChild(el("div", { class: "wd-front", text: card.front || card.jp }));
     if (card.kana && card.kana !== card.front) wrap.appendChild(el("div", { class: "wd-kana", text: card.kana }));
     if (card.romaji && card.romaji !== card.kana) wrap.appendChild(el("div", { class: "wd-romaji", text: card.romaji }));
-    wrap.appendChild(el("div", { class: "wd-back", text: card.back || card.en }));
+    wrap.appendChild(el("div", { class: "wd-back" }, [
+      el("span", { class: "tr-en", text: card.back || card.en }),
+      card.de ? el("span", { class: "tr-de", text: card.de }) : null
+    ]));
     if (card.hint) wrap.appendChild(el("div", { class: "wd-hint", text: card.hint }));
 
     wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));

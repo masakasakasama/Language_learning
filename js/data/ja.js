@@ -62,19 +62,72 @@ window.DATA_JA = (function () {
 
   // ───────────── VOCAB ─────────────
   // Each: [jp, kana, romaji, en]
+  // Optional German translations, keyed by card id (or by jp word for vocab).
+  // Only present where I've manually added them; cards without a match just
+  // show English. See DE_VOCAB below.
   function vocabCards(deck, level, items) {
-    return items.map((it) => ({
-      id: "ja:vocab:" + deck + ":" + it[0],
-      lang: "ja",
-      level,
-      deck,
-      type: "vocab",
-      jp: it[0], kana: it[1], romaji: it[2], en: it[3],
-      ex: it[4] || [],   // [[jp, en], ...] example sentences
-      front: it[0], back: it[3], hint: it[1],
-      speakText: it[1] || it[0]
-    }));
+    return items.map((it) => {
+      const id = "ja:vocab:" + deck + ":" + it[0];
+      return {
+        id, lang: "ja", level, deck,
+        type: "vocab",
+        jp: it[0], kana: it[1], romaji: it[2], en: it[3],
+        de: DE_VOCAB[it[0]] || "",
+        ex: it[4] || [],   // [[jp, en], ...] example sentences
+        front: it[0], back: it[3], hint: it[1],
+        speakText: it[1] || it[0]
+      };
+    });
   }
+
+  // Japanese → German for common N5/N4 vocab (key: the JP form).
+  // Empty string is fine; cards without an entry show only English.
+  const DE_VOCAB = {
+    // greetings
+    "こんにちは":"hallo", "おはよう":"guten Morgen", "おはようございます":"guten Morgen (höflich)",
+    "こんばんは":"guten Abend", "おやすみ":"gute Nacht", "さようなら":"auf Wiedersehen",
+    "またね":"bis später", "ありがとう":"danke", "すみません":"Entschuldigung",
+    "ごめんなさい":"es tut mir leid", "はい":"ja", "いいえ":"nein", "お願いします":"bitte",
+    // self
+    "私":"ich", "あなた":"du / Sie", "名前":"Name", "先生":"Lehrer/in",
+    "学生":"Schüler/Student", "友達":"Freund/in", "人":"Person", "国":"Land",
+    "日本":"Japan", "アメリカ":"Amerika", "イギリス":"Großbritannien",
+    // numbers
+    "一":"eins","二":"zwei","三":"drei","四":"vier","五":"fünf","六":"sechs",
+    "七":"sieben","八":"acht","九":"neun","十":"zehn","百":"hundert","千":"tausend",
+    "万":"zehntausend","円":"Yen",
+    // family
+    "家族":"Familie","お父さん":"Vater","お母さん":"Mutter","兄":"älterer Bruder",
+    "姉":"ältere Schwester","弟":"jüngerer Bruder","妹":"jüngere Schwester",
+    "子供":"Kind","犬":"Hund","猫":"Katze",
+    // food
+    "水":"Wasser","お茶":"Tee","コーヒー":"Kaffee","ご飯":"Reis / Mahlzeit",
+    "パン":"Brot","卵":"Ei","魚":"Fisch","肉":"Fleisch","野菜":"Gemüse",
+    "果物":"Obst","りんご":"Apfel","寿司":"Sushi","ラーメン":"Ramen",
+    "美味しい":"lecker",
+    // days/time
+    "月曜日":"Montag","火曜日":"Dienstag","水曜日":"Mittwoch","木曜日":"Donnerstag",
+    "金曜日":"Freitag","土曜日":"Samstag","日曜日":"Sonntag","今日":"heute",
+    "明日":"morgen","昨日":"gestern","朝":"Morgen","夜":"Nacht",
+    // verbs N5
+    "食べる":"essen","飲む":"trinken","見る":"sehen","聞く":"hören / fragen",
+    "話す":"sprechen","読む":"lesen","書く":"schreiben","行く":"gehen",
+    "来る":"kommen","する":"machen","買う":"kaufen","寝る":"schlafen",
+    "起きる":"aufwachen / aufstehen",
+    // adj N5
+    "大きい":"groß","小さい":"klein","新しい":"neu","古い":"alt (Sache)",
+    "高い":"hoch / teuer","安い":"billig","暑い":"heiß (Wetter)","寒い":"kalt (Wetter)",
+    "楽しい":"spaßig","可愛い":"süß/niedlich","綺麗":"hübsch / sauber","元気":"munter / gesund",
+    // travel N4
+    "旅行":"Reise","飛行機":"Flugzeug","電車":"Zug","地下鉄":"U-Bahn",
+    "タクシー":"Taxi","切符":"Fahrkarte","空港":"Flughafen","ホテル":"Hotel",
+    "観光":"Sightseeing","地図":"Karte",
+    // work N4
+    "仕事":"Arbeit","会社":"Firma","会議":"Meeting","上司":"Vorgesetzte/r",
+    // feelings N4
+    "嬉しい":"glücklich","悲しい":"traurig","怒る":"sich ärgern","驚く":"überrascht sein",
+    "心配":"Sorge","安心":"Erleichterung","興味":"Interesse","緊張":"Nervosität"
+  };
 
   const VOCAB = {
     // ─── N5 ───
@@ -406,9 +459,9 @@ window.DATA_JA = (function () {
       title: "は — Topic marker",
       intro: "The particle <b>は</b> (pronounced <i>wa</i>) marks the <b>topic</b> — what you're talking about. Think \"as for X, …\".",
       examples: [
-        { jp: "私は学生です。", en: "I am a student.", breakdown: "私 (I) + は (topic) + 学生 (student) + です (is)" },
-        { jp: "これはペンです。", en: "This is a pen.", breakdown: "これ + は + ペン + です" },
-        { jp: "猫はかわいいです。", en: "Cats are cute.", breakdown: "猫 + は + かわいい + です" }
+        { jp: "私は学生です。", en: "I am a student.", de: "Ich bin Student.", breakdown: "私 (I) + は (topic) + 学生 (student) + です (is)" },
+        { jp: "これはペンです。", en: "This is a pen.", de: "Das ist ein Stift.", breakdown: "これ + は + ペン + です" },
+        { jp: "猫はかわいいです。", en: "Cats are cute.", de: "Katzen sind süß.", breakdown: "猫 + は + かわいい + です" }
       ],
       quiz: [
         { type: "mc", q: "How is は pronounced as a particle?", choices: ["ha","wa","ba","ga"], answer: "wa" },
@@ -421,9 +474,9 @@ window.DATA_JA = (function () {
       title: "です — Polite \"to be\"",
       intro: "<b>です</b> is the polite copula. It comes <b>at the end</b> after a noun or い/な-adjective: \"X です\" = \"It is X\".",
       examples: [
-        { jp: "学生です。", en: "I am a student.", breakdown: "学生 + です" },
-        { jp: "日本人です。", en: "I am Japanese.", breakdown: "日本 + 人 + です" },
-        { jp: "美味しいです。", en: "It's delicious.", breakdown: "美味しい + です" }
+        { jp: "学生です。", en: "I am a student.", de: "Ich bin Student.", breakdown: "学生 + です" },
+        { jp: "日本人です。", en: "I am Japanese.", de: "Ich bin Japaner/in.", breakdown: "日本 + 人 + です" },
+        { jp: "美味しいです。", en: "It's delicious.", de: "Es ist lecker.", breakdown: "美味しい + です" }
       ],
       quiz: [
         { type: "mc", q: "What does です mean?", choices: ["question marker","polite \"to be\"","topic marker","\"and\""], answer: "polite \"to be\"" },
@@ -435,8 +488,8 @@ window.DATA_JA = (function () {
       title: "か — Question marker",
       intro: "Add <b>か</b> at the end to make a question. No \"?\" needed in writing.",
       examples: [
-        { jp: "学生ですか。", en: "Are you a student?", breakdown: "学生 + です + か" },
-        { jp: "これは何ですか。", en: "What is this?", breakdown: "これ + は + 何 + です + か" }
+        { jp: "学生ですか。", en: "Are you a student?", de: "Bist du Student?", breakdown: "学生 + です + か" },
+        { jp: "これは何ですか。", en: "What is this?", de: "Was ist das?", breakdown: "これ + は + 何 + です + か" }
       ],
       quiz: [
         { type: "mc", q: "How do you make a question?", choices: ["add か at the end","add は at start","remove です","add ね"], answer: "add か at the end" },
