@@ -77,10 +77,6 @@ window.Views = (function () {
         ]));
         node.onclick = () => App.showUnit(unit);
         path.appendChild(node);
-        // alternate offset for path zig-zag
-        if (idx % 4 === 1) node.style.marginLeft = "10%";
-        else if (idx % 4 === 2) node.style.marginLeft = "20%";
-        else if (idx % 4 === 3) node.style.marginLeft = "10%";
       });
       viewEl.appendChild(path);
     });
@@ -364,15 +360,15 @@ window.Views = (function () {
 
     viewEl.appendChild(el("div", { class: "view-title", text: meta.nativeName + " — Browse" }));
 
-    // Status filter chips — self-marks first, then SRS status
+    // Status filter chips — self-marks first, then review-schedule status
     const filters = [
       { id: "all",       label: "All",         desc: "Everything in this level" },
       { id: "know",      label: "😀 Know",      desc: "Marked as known" },
       { id: "ok",        label: "😐 OK",        desc: "Marked as so-so" },
       { id: "dontknow",  label: "😕 Hard",      desc: "Marked as hard" },
       { id: "unmarked",  label: "Unmarked",    desc: "No self-mark yet" },
-      { id: "learning",  label: "Learning",    desc: "SRS: still in early intervals" },
-      { id: "mastered",  label: "Mastered",    desc: "SRS: interval ≥ 21 days" },
+      { id: "learning",  label: "Learning",    desc: "Still in early review intervals" },
+      { id: "mastered",  label: "Mastered",    desc: "Interval ≥ 21 days" },
       { id: "untouched", label: "Not started", desc: "Never reviewed" }
     ];
     let activeFilter = opts.initialFilter || "all";
@@ -389,9 +385,22 @@ window.Views = (function () {
     });
     viewEl.appendChild(filterRow);
 
-    // Level tabs
+    // Level tabs: All (everything) → N5..N1 (or A1..C2) → ✏️ My (custom)
     const tabs = el("div", { class: "level-tabs" });
-    let activeLevel = opts.initialLevel || meta.levels[0].id;
+    let activeLevel = opts.initialLevel || "__all__";
+    const allTab = el("button", {
+      class: "level-tab" + (activeLevel === "__all__" ? " active" : ""),
+      text: "All",
+      title: "All levels",
+      style: "--lc:#ddd6fe"
+    });
+    allTab.onclick = () => {
+      activeLevel = "__all__";
+      tabs.querySelectorAll(".level-tab").forEach((t) => t.classList.remove("active"));
+      allTab.classList.add("active");
+      renderLevel();
+    };
+    tabs.appendChild(allTab);
     meta.levels.forEach((lv) => {
       const tab = el("button", { class: "level-tab" + (lv.id === activeLevel ? " active" : ""), text: lv.name, style: `--lc:${lv.color}` });
       tab.onclick = () => {
@@ -402,6 +411,20 @@ window.Views = (function () {
       };
       tabs.appendChild(tab);
     });
+    // ✏️ Custom-words-only tab
+    const customTab = el("button", {
+      class: "level-tab" + (activeLevel === "__custom__" ? " active" : ""),
+      text: "✏️ My",
+      title: "Words you added yourself",
+      style: "--lc:#fde68a"
+    });
+    customTab.onclick = () => {
+      activeLevel = "__custom__";
+      tabs.querySelectorAll(".level-tab").forEach((t) => t.classList.remove("active"));
+      customTab.classList.add("active");
+      renderLevel();
+    };
+    tabs.appendChild(customTab);
     viewEl.appendChild(tabs);
 
     // Summary
@@ -438,8 +461,42 @@ window.Views = (function () {
 
     function renderLevel() {
       clear(list);
-      const units = pack.UNITS.filter((u) => u.level === activeLevel);
-      const customForLevel = Storage.getCustomCards(lang).filter((c) => c.level === activeLevel);
+
+      // Dedicated tab: show all custom cards regardless of level
+      if (activeLevel === "__custom__") {
+        const allCustom = Storage.getCustomCards(lang);
+        if (!allCustom.length) {
+          list.appendChild(el("div", { class: "muted center", text: "You haven't added any words yet — tap + to create your first one." }));
+          summary.textContent = "0 cards · custom";
+          return;
+        }
+        const filtered = allCustom.filter(passesFilter);
+        summary.textContent = `Showing ${filtered.length} of ${allCustom.length} cards · my words`;
+        // Group by level for readability
+        const byLevel = {};
+        filtered.forEach((c) => { (byLevel[c.level] = byLevel[c.level] || []).push(c); });
+        meta.levels.forEach((lv) => {
+          const cards = byLevel[lv.id]; if (!cards || !cards.length) return;
+          const block = el("div", { class: "browse-unit card" });
+          block.appendChild(el("div", { class: "browse-unit-head" }, [
+            el("div", { class: "unit-icon small", text: "✏️", style: "background:#fde68a" }),
+            el("div", { class: "browse-unit-title", text: "My " + lv.name + " words" }),
+            el("div", { class: "muted small", style: "margin-left:auto;", text: cards.length + "" })
+          ]));
+          const grid = el("div", { class: "browse-grid" });
+          cards.forEach((c) => grid.appendChild(buildBrowseCard(c, lang, () => renderLevel())));
+          block.appendChild(grid);
+          list.appendChild(block);
+        });
+        return;
+      }
+
+      const units = activeLevel === "__all__"
+        ? pack.UNITS
+        : pack.UNITS.filter((u) => u.level === activeLevel);
+      const customForLevel = activeLevel === "__all__"
+        ? Storage.getCustomCards(lang)
+        : Storage.getCustomCards(lang).filter((c) => c.level === activeLevel);
       if (!units.length && !customForLevel.length) {
         list.appendChild(el("div", { class: "muted center", text: "No content for this level yet — tap + to add your own words." }));
         summary.textContent = "";
@@ -486,7 +543,8 @@ window.Views = (function () {
         block.appendChild(grid);
         list.appendChild(block);
       });
-      summary.textContent = `Showing ${totalShown} of ${totalAll} cards · ${activeFilter}`;
+      const lvLabel = activeLevel === "__all__" ? "all levels" : activeLevel;
+      summary.textContent = `Showing ${totalShown} of ${totalAll} cards · ${activeFilter} · ${lvLabel}`;
     }
     renderLevel();
 
@@ -630,30 +688,50 @@ window.Views = (function () {
 
     wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));
 
-    // Example sentences — only show ones whose required words are all already learned.
-    // Combines (a) the curated EXAMPLES pool with req tags, and (b) any inline `ex`
-    // baked into the card data.
+    // Two example sections:
+    //   ① level-appropriate static example (uses only same-level-or-lower vocab)
+    //   ② dynamic example built from words YOU have actually learned
+    // If the dynamic section has nothing yet, we encourage the learner instead.
     const learned = Storage.learnedSet(lang);
+    const levelExamples = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
     const dynamicExamples = (App.examplesFor(card.id, lang) || []).filter((ex) => {
-      if (!ex.req) return true;
+      if (!ex.req || !ex.req.length) return true;
       return ex.req.every((id) => !!learned[id] || id === card.id);
-    }).map((ex) => ({ text: ex.text, tr: ex.tr }));
-    const inlineExamples = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
-    const allExamples = dynamicExamples.concat(inlineExamples).slice(0, 3);
-    if (allExamples.length) {
-      const exBlock = el("div", { class: "wd-examples" });
-      exBlock.appendChild(el("div", { class: "wd-ex-title", text: "Example" + (allExamples.length > 1 ? "s" : "") }));
-      allExamples.forEach((ex) => {
-        const row = el("div", { class: "wd-ex" });
-        row.appendChild(el("div", { class: "wd-ex-text" }, [
-          el("span", { class: "wd-ex-jp", text: ex.text }),
-          el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
-        ]));
-        if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
-        exBlock.appendChild(row);
-      });
-      wrap.appendChild(exBlock);
+    });
+
+    const exBlock = el("div", { class: "wd-examples" });
+
+    // ① level-appropriate
+    exBlock.appendChild(el("div", { class: "wd-ex-title", text: "Example sentence" }));
+    if (levelExamples.length) {
+      const ex = levelExamples[0];
+      const row = el("div", { class: "wd-ex" });
+      row.appendChild(el("div", { class: "wd-ex-text" }, [
+        el("span", { class: "wd-ex-jp", text: ex.text }),
+        el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
+      ]));
+      if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
+      exBlock.appendChild(row);
+    } else {
+      exBlock.appendChild(el("div", { class: "wd-ex-empty", text: "No example provided for this card yet." }));
     }
+
+    // ② learned-only
+    exBlock.appendChild(el("div", { class: "wd-ex-title", style: "margin-top:10px;", text: "Using words you've learned" }));
+    if (dynamicExamples.length) {
+      const ex = dynamicExamples[0];
+      const row = el("div", { class: "wd-ex" });
+      row.appendChild(el("div", { class: "wd-ex-text" }, [
+        el("span", { class: "wd-ex-jp", text: ex.text }),
+        el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
+      ]));
+      if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
+      exBlock.appendChild(row);
+    } else {
+      exBlock.appendChild(el("div", { class: "wd-ex-locked", html: "🔓 Learn more words and this example will unlock here." }));
+    }
+
+    wrap.appendChild(exBlock);
 
     // Self-assessment block — visible 3-button row
     const currentMark = Storage.getMark(card.id, lang);
@@ -707,7 +785,7 @@ window.Views = (function () {
     // Forget button — only meaningful if there is something to forget
     if (status !== "untouched") {
       const forgetBtn = el("button", { class: "btn warn big", text: "🗑 Forget this word", onclick: () => {
-        if (!confirm("Forget \"" + (card.front || card.jp) + "\"? Its SRS progress will be cleared and it will reappear as new.")) return;
+        if (!confirm("Forget \"" + (card.front || card.jp) + "\"? Its review schedule will be cleared and it will reappear as new.")) return;
         Storage.forgetCard(card.id, lang);
         UI.closeModal();
         UI.toast("Removed from learned set", "good");
@@ -868,7 +946,7 @@ window.Views = (function () {
 
     // Storage info note
     const info = el("div", { class: "card storage-info muted small" });
-    info.innerHTML = "Your progress, SRS state, learned words, hearts and stats are stored locally in <b>localStorage</b> under the key <code>mochi.v1</code>. Nothing leaves your device.";
+    info.innerHTML = "Your progress, review schedule, learned words and stats are stored locally in <b>localStorage</b> under the key <code>mochi.v1</code>. Nothing leaves your device.";
     viewEl.appendChild(info);
   }
 

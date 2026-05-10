@@ -68,12 +68,16 @@ window.DATA_JA = (function () {
   function vocabCards(deck, level, items) {
     return items.map((it) => {
       const id = "ja:vocab:" + deck + ":" + it[0];
+      // Inline `ex` takes priority. Fall back to SIMPLE_EX dict so every card
+      // gets at least one level-appropriate example sentence.
+      const inlineEx = it[4] || [];
+      const fallback = SIMPLE_EX[it[0]] ? [SIMPLE_EX[it[0]]] : [];
       return {
         id, lang: "ja", level, deck,
         type: "vocab",
         jp: it[0], kana: it[1], romaji: it[2], en: it[3],
         de: DE_VOCAB[it[0]] || "",
-        ex: it[4] || [],   // [[jp, en], ...] example sentences
+        ex: inlineEx.length ? inlineEx : fallback,
         front: it[0], back: it[3], hint: it[1],
         speakText: it[1] || it[0]
       };
@@ -173,8 +177,8 @@ window.DATA_JA = (function () {
     "効":"Wirkung","率":"Rate / Verhältnis",
     // Kanji N1
     "概":"Umriss","念":"Gedanke","矛":"Hellebarde","盾":"Schild",
-    "顕":"prominent","著":"prominent / veröffentlichen","憂":"Besorgnis",
-    // N1 idioms (extra)
+    "顕":"prominent","著":"prominent / veröffentlichen","憂":"Besorgnis","旅":"Reise",
+    // N1 idioms
     "四面楚歌":"von Feinden umzingelt","温故知新":"aus der Vergangenheit lernen",
     "七転八起":"niemals aufgeben","弱肉強食":"das Recht des Stärkeren",
     "自業自得":"selber schuld","大器晩成":"Spätzünder",
@@ -205,6 +209,144 @@ window.DATA_JA = (function () {
     "ひいては":"folglich / in Erweiterung","案の定":"wie erwartet",
     "とりわけ":"besonders / vor allem","甚だ":"äußerst","ことごとく":"durch und durch",
     "軒並み":"durchweg","何気なく":"beiläufig","ろくに":"(nicht) ordentlich"
+  };
+
+  // Level-appropriate example sentences, keyed by JP form. Used as the FIRST
+  // example shown on every card (always visible). Designed to use only same-
+  // level-or-lower vocabulary so the sentence is understandable in context.
+  const SIMPLE_EX = {
+    // kanji N5 — concrete, single-noun-or-verb sentences
+    "日":["今日はいい日です。","Today is a nice day."],
+    "月":["月がきれいです。","The moon is beautiful."],
+    "火":["火を消してください。","Please put out the fire."],
+    "水":["水を飲みます。","I drink water."],
+    "木":["大きい木があります。","There is a big tree."],
+    "金":["金はたかいです。","Gold is expensive."],
+    "土":["土をさわります。","I touch the soil."],
+    "人":["あの人は先生です。","That person is a teacher."],
+    "山":["山にのぼります。","I climb the mountain."],
+    "川":["川をわたります。","I cross the river."],
+    "田":["田にいきます。","I go to the rice field."],
+    "上":["うえを見ます。","I look up."],
+    "下":["したに本があります。","There is a book below."],
+    "中":["はこのなかにあります。","It's inside the box."],
+    "大":["大きいいぬです。","It's a big dog."],
+    "小":["小さいねこです。","It's a small cat."],
+    "私":["私は学生です。","I am a student."],
+    "父":["父は元気です。","My father is well."],
+    "母":["母はやさしいです。","My mother is kind."],
+    "子":["子どもがいます。","I have a child."],
+    "何":["これは何ですか。","What is this?"],
+    "時":["今、何時ですか。","What time is it now?"],
+    "年":["来年、日本に行きます。","I'll go to Japan next year."],
+    "先":["先に行きます。","I'll go first."],
+    "生":["私は学生です。","I am a student."],
+    "学":["日本語を学びます。","I learn Japanese."],
+    "校":["学校に行きます。","I go to school."],
+    "国":["私の国は日本です。","My country is Japan."],
+    "本":["本を読みます。","I read a book."],
+    "行":["学校に行きます。","I go to school."],
+    // kanji N4
+    "朝":["朝、コーヒーを飲みます。","I drink coffee in the morning."],
+    "昼":["昼ご飯を食べます。","I eat lunch."],
+    "夜":["夜、寝ます。","I sleep at night."],
+    "週":["来週、会いましょう。","Let's meet next week."],
+    "駅":["駅で待ちます。","I'll wait at the station."],
+    "銀":["銀行に行きます。","I go to the bank."],
+    "病":["病院にいきます。","I go to the hospital."],
+    "院":["病院ははしります。","The hospital is far."],
+    "旅":["来年、旅をします。","I'll travel next year."],
+    "地":["地下鉄が速い。","The subway is fast."],
+    // kanji N3+
+    "政":["政治に興味があります。","I'm interested in politics."],
+    "治":["この国を治める。","To govern this country."],
+    "経":["経済はゆっくり良くなります。","The economy slowly improves."],
+    "済":["仕事を済ませました。","I finished the work."],
+    "技":["新しい技を学ぶ。","Learn a new skill."],
+    "術":["技術が高い。","High technology."],
+    "影":["木の影に座る。","I sit in the tree's shadow."],
+    "響":["大きい音が響く。","A loud sound echoes."],
+    "契":["契約しました。","We signed a contract."],
+    "約":["約束を守ります。","I keep my promise."],
+    "責":["責任を持ちます。","I take responsibility."],
+    "任":["仕事を任せます。","I entrust the work."],
+    "効":["薬が効きます。","The medicine works."],
+    "率":["率が高い。","The rate is high."],
+    "概":["概念を学ぶ。","Learn a concept."],
+    "念":["念のため確認します。","I'll confirm just in case."],
+    "矛":["矛盾があります。","There is a contradiction."],
+    "盾":["盾を持つ。","Hold a shield."],
+    "顕":["変化が顕著です。","The change is striking."],
+    "著":["有名な著者です。","A famous author."],
+    "憂":["事故を憂慮しています。","I'm concerned about the accident."],
+
+    // N1 advanced verbs (single-sentence examples using mostly basic words)
+    "携わる":["この仕事に携わっています。","I'm engaged in this work."],
+    "培う":["友情を培う。","To foster friendship."],
+    "司る":["会議を司る。","To preside over the meeting."],
+    "抱える":["問題を抱える。","To be burdened with a problem."],
+    "試みる":["新しい方法を試みる。","I'll try a new method."],
+    "強いる":["決断を強いる。","To force a decision."],
+    "帯びる":["重要な意味を帯びる。","To take on important meaning."],
+    "醸す":["雰囲気を醸す。","To create an atmosphere."],
+    "凝る":["音楽に凝る。","To be absorbed in music."],
+    "偽る":["名前を偽る。","To use a false name."],
+    "怠る":["仕事を怠らない。","I won't neglect work."],
+    "慕う":["先生を慕う。","I look up to my teacher."],
+    "戒める":["子どもを戒める。","To admonish the child."],
+    "賄う":["費用を賄う。","To cover the cost."],
+    "仰ぐ":["天を仰ぐ。","To look up at the sky."],
+    "遮る":["話を遮る。","To interrupt the conversation."],
+    "据える":["机を据える。","To set up a desk."],
+    "損なう":["気分を損なう。","To spoil the mood."],
+    "蘇る":["記憶が蘇る。","The memory revives."],
+    "窺う":["様子を窺う。","To check the situation."],
+    // N1 advanced nouns
+    "究極":["究極の選択。","The ultimate choice."],
+    "抽象":["抽象的な話です。","It's an abstract topic."],
+    "具体":["具体的な例を示す。","Show a concrete example."],
+    "範囲":["広い範囲にわたる。","Covers a wide range."],
+    "兆候":["回復の兆候があります。","There are signs of recovery."],
+    "偶然":["偶然、会いました。","We met by chance."],
+    "必然":["これは必然です。","This is inevitable."],
+    "妥協":["妥協は難しい。","Compromise is difficult."],
+    "妥当":["妥当な答えです。","It's a valid answer."],
+    "自負":["仕事に自負がある。","I take pride in my work."],
+    "危惧":["将来を危惧する。","I worry about the future."],
+    "措置":["措置を取ります。","We will take measures."],
+    "繁栄":["国の繁栄を願う。","I wish for the country's prosperity."],
+    "衰退":["経済の衰退が続く。","The economic decline continues."],
+    "慎重":["慎重に決めます。","I'll decide carefully."],
+    "軽率":["軽率な行動。","A careless action."],
+    "配慮":["配慮が必要です。","Consideration is needed."],
+    "秩序":["秩序を守る。","To maintain order."],
+    "調和":["調和のとれた関係。","A harmonious relationship."],
+    "葛藤":["心の葛藤がある。","There's an inner conflict."],
+    "相互":["相互理解が大切です。","Mutual understanding is important."],
+    "弊害":["弊害が大きい。","The harmful effects are large."],
+    "是正":["問題を是正します。","I'll correct the problem."],
+    "規範":["社会の規範に従う。","To follow social norms."],
+    "模範":["良い模範を示す。","To set a good example."],
+    "卓越":["卓越した技術。","Outstanding skill."],
+    "緻密":["緻密な計画。","A detailed plan."],
+    "厳密":["厳密に調べる。","To examine strictly."],
+    "潜在":["潜在的な力。","Latent power."],
+    "真摯":["真摯な態度で取り組む。","Tackle with a sincere attitude."],
+    // N1 expressions
+    "一概に":["一概には言えない。","Can't be said without exception."],
+    "強いて":["強いて言えば、好きです。","If I had to say, I like it."],
+    "何卒":["何卒、よろしくお願いします。","Please, take care."],
+    "あえて":["あえて挑戦します。","I'll dare to try."],
+    "軽々しく":["軽々しく決めない。","Don't decide carelessly."],
+    "一切":["一切、話しません。","I won't talk at all."],
+    "ひいては":["ひいては社会のためになる。","By extension, it benefits society."],
+    "案の定":["案の定、雨が降った。","Just as expected, it rained."],
+    "とりわけ":["とりわけ美味しい。","Particularly delicious."],
+    "甚だ":["甚だ残念です。","Extremely regrettable."],
+    "ことごとく":["ことごとく失敗した。","Failed every single time."],
+    "軒並み":["軒並み値上がりした。","Prices rose across the board."],
+    "何気なく":["何気なく言った。","I said it casually."],
+    "ろくに":["ろくに食べていない。","I haven't eaten properly."]
   };
 
   const VOCAB = {
@@ -528,6 +670,7 @@ window.DATA_JA = (function () {
       on: it[2],
       en: it[3],
       de: DE_VOCAB[it[0]] || "",
+      ex: SIMPLE_EX[it[0]] ? [SIMPLE_EX[it[0]]] : [],
       front: it[0],
       back: it[3],
       hint: (it[1] ? "kun: " + it[1] : "") + (it[2] ? "  on: " + it[2] : ""),
