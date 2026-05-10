@@ -10,6 +10,18 @@ window.App = (function () {
   }
   function getLangMeta(lang) { return DATA_LANGS[lang || Storage.getLang()]; }
 
+  // Built-in cards + user-created custom cards combined.
+  function allCards(lang) {
+    const L = lang || Storage.getLang();
+    const pack = getLangPack(L);
+    const custom = Storage.getCustomCards(L);
+    return pack.ALL_CARDS.concat(custom);
+  }
+  function cardById(id, lang) {
+    const L = lang || Storage.getLang();
+    return allCards(L).find((c) => c.id === id) || null;
+  }
+
   function speak(text) {
     const meta = getLangMeta();
     Audio.speak(text, meta.bcp47);
@@ -40,7 +52,7 @@ window.App = (function () {
     document.getElementById("lang-name").textContent = meta.nativeName;
     document.getElementById("stat-streak").textContent = Storage.getStreak().current;
     document.getElementById("stat-xp").textContent = Storage.langState(lang).xp;
-    const due = SRS.countDue(pack.ALL_CARDS, lang);
+    const due = SRS.countDue(allCards(lang), lang);
     document.getElementById("stat-due").textContent = due;
     const badge = document.getElementById("nav-due-badge");
     if (due > 0) {
@@ -133,7 +145,7 @@ window.App = (function () {
     }
   }
 
-  return { init, go, showUnit, startLesson, refreshTopbar, speak, speakSlow, examplesFor, getLangPack, getLangMeta };
+  return { init, go, showUnit, startLesson, refreshTopbar, speak, speakSlow, examplesFor, getLangPack, getLangMeta, allCards, cardById };
 })();
 
 document.addEventListener("DOMContentLoaded", App.init);

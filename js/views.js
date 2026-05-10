@@ -37,7 +37,7 @@ window.Views = (function () {
     viewEl.appendChild(goalCard);
 
     // Mascot greeting
-    const due = SRS.countDue(pack.ALL_CARDS, lang);
+    const due = SRS.countDue(App.allCards(lang), lang);
     let mood = "happy";
     let bubble = "Let's learn some " + meta.name + "! 💖";
     if (due > 0) { mood = "thinking"; bubble = `You have <b>${due}</b> card${due===1?"":"s"} to review. 🔄`; }
@@ -296,7 +296,8 @@ window.Views = (function () {
     clear(viewEl);
     const lang = Storage.getLang();
     const pack = getLangPack(lang);
-    const dueIds = SRS.dueCardIds(pack.ALL_CARDS, lang);
+    const all = App.allCards(lang);
+    const dueIds = SRS.dueCardIds(all, lang);
 
     if (!dueIds.length) {
       viewEl.appendChild(mascot("happy", "No cards due! 🎉<br>Come back tomorrow."));
@@ -305,7 +306,7 @@ window.Views = (function () {
       return;
     }
 
-    const cards = shuffle(dueIds.map((id) => pack.cardById(id)).filter(Boolean));
+    const cards = shuffle(dueIds.map((id) => App.cardById(id, lang)).filter(Boolean));
     let idx = 0, correct = 0;
     const head = el("div", { class: "lesson-head" });
     const exitBtn = el("button", { class: "btn ghost", onclick: () => App.go("home") }, ["✕"]);
@@ -337,8 +338,8 @@ window.Views = (function () {
         return;
       }
       const card = cards[idx++];
-      const pool = pack.ALL_CARDS.filter((c) => c.deck === card.deck && c.id !== card.id);
-      const ex = Exercises.buildMultipleChoice(card, pool.length >= 4 ? pool : pack.ALL_CARDS, "front-to-back");
+      const pool = all.filter((c) => c.deck === card.deck && c.id !== card.id);
+      const ex = Exercises.buildMultipleChoice(card, pool.length >= 4 ? pool : all, "front-to-back");
       Exercises.renderMC(ex, stage, (ok) => {
         const old = Storage.getCard(card.id, lang);
         const ns = SRS.review(old, ok ? "good" : "again");
@@ -438,12 +439,31 @@ window.Views = (function () {
     function renderLevel() {
       clear(list);
       const units = pack.UNITS.filter((u) => u.level === activeLevel);
-      if (!units.length) {
-        list.appendChild(el("div", { class: "muted center", text: "No content for this level yet." }));
+      const customForLevel = Storage.getCustomCards(lang).filter((c) => c.level === activeLevel);
+      if (!units.length && !customForLevel.length) {
+        list.appendChild(el("div", { class: "muted center", text: "No content for this level yet — tap + to add your own words." }));
         summary.textContent = "";
         return;
       }
       let totalShown = 0, totalAll = 0;
+      // Render the "My words" deck first for this level so custom cards are easy to find
+      if (customForLevel.length) {
+        const filtered = customForLevel.filter(passesFilter);
+        totalAll += customForLevel.length;
+        if (filtered.length) {
+          totalShown += filtered.length;
+          const block = el("div", { class: "browse-unit card" });
+          block.appendChild(el("div", { class: "browse-unit-head" }, [
+            el("div", { class: "unit-icon small", text: "✏️", style: "background:#fde68a" }),
+            el("div", { class: "browse-unit-title", text: "My words" }),
+            el("div", { class: "muted small", style: "margin-left:auto;", text: filtered.length + "/" + customForLevel.length })
+          ]));
+          const grid = el("div", { class: "browse-grid" });
+          filtered.forEach((c) => grid.appendChild(buildBrowseCard(c, lang, () => renderLevel())));
+          block.appendChild(grid);
+          list.appendChild(block);
+        }
+      }
       units.forEach((unit) => {
         // unique cards across lessons
         const cardsSet = new Map();
@@ -462,27 +482,99 @@ window.Views = (function () {
         ]));
 
         const grid = el("div", { class: "browse-grid" });
-        filtered.forEach((c) => {
-          const status = Storage.cardStatus(c.id, lang);
-          const mark = Storage.getMark(c.id, lang);
-          const item = el("div", { class: "browse-card status-" + status + (mark ? " mark-" + mark : "") });
-          item.appendChild(statusDot(status));
-          const body = el("button", { class: "browse-card-body" });
-          body.appendChild(el("div", { class: "bc-front", text: c.front || c.jp }));
-          body.appendChild(el("div", { class: "bc-back", text: c.back || c.en }));
-          if (c.de) body.appendChild(el("div", { class: "bc-back tr-de", text: c.de }));
-          if (c.kana && c.kana !== c.front) body.appendChild(el("div", { class: "bc-hint", text: c.kana }));
-          body.onclick = () => showWordDetail(c, lang, () => renderLevel());
-          item.appendChild(body);
-          item.appendChild(markRow(c.id, lang, mark, () => renderLevel()));
-          grid.appendChild(item);
-        });
+        filtered.forEach((c) => grid.appendChild(buildBrowseCard(c, lang, () => renderLevel())));
         block.appendChild(grid);
         list.appendChild(block);
       });
       summary.textContent = `Showing ${totalShown} of ${totalAll} cards · ${activeFilter}`;
     }
     renderLevel();
+
+    // Floating "Add word" button
+    const fab = el("button", { class: "fab", title: "Add a custom word", text: "+", onclick: () => showAddWord(lang, () => renderLevel(), activeLevel) });
+    viewEl.appendChild(fab);
+  }
+
+  // Build one browse card (extracted so the My-words section can reuse it)
+  function buildBrowseCard(c, lang, onChange) {
+    const status = Storage.cardStatus(c.id, lang);
+    const mark = Storage.getMark(c.id, lang);
+    const item = el("div", { class: "browse-card status-" + status + (mark ? " mark-" + mark : "") });
+    item.appendChild(statusDot(status));
+    const body = el("button", { class: "browse-card-body" });
+    body.appendChild(el("div", { class: "bc-front", text: c.front || c.jp }));
+    body.appendChild(el("div", { class: "bc-back", text: c.back || c.en }));
+    if (c.de) body.appendChild(el("div", { class: "bc-back tr-de", text: c.de }));
+    if (c.kana && c.kana !== c.front) body.appendChild(el("div", { class: "bc-hint", text: c.kana }));
+    body.onclick = () => showWordDetail(c, lang, onChange);
+    item.appendChild(body);
+    item.appendChild(markRow(c.id, lang, mark, onChange));
+    return item;
+  }
+
+  function statusDot(status) {
+    const map = {
+      untouched: { c: "dot-gray",   t: "Not started" },
+      new:       { c: "dot-blue",   t: "New" },
+      learning:  { c: "dot-orange", t: "Learning" },
+      review:    { c: "dot-yellow", t: "Reviewing" },
+      mastered:  { c: "dot-green",  t: "Mastered" }
+    }[status] || { c: "dot-gray", t: status };
+    return el("span", { class: "status-dot " + map.c, title: map.t });
+  }
+
+  // Add-word modal — creates a custom card in the current language
+  function showAddWord(lang, onAdded, defaultLevel) {
+    const meta = getLangMeta(lang);
+    const wrap = el("div", { class: "lang-picker" });
+    wrap.appendChild(el("div", { class: "lang-picker-title", text: "✏️ Add your own word" }));
+    wrap.appendChild(el("div", { class: "muted small", text: meta.nativeName + " · stored locally and synced if you have cloud sync set up" }));
+
+    const fields = {};
+    function field(label, key, placeholder, required) {
+      const w = el("div", { class: "form-field" });
+      w.appendChild(el("label", { class: "form-label", text: label + (required ? " *" : "") }));
+      const inp = el("input", { class: "ex-input", type: "text", placeholder, autocomplete: "off" });
+      w.appendChild(inp);
+      fields[key] = inp;
+      return w;
+    }
+    wrap.appendChild(field("Word (in " + meta.nativeName + ")", "jp", lang === "ja" ? "新聞" : lang === "ko" ? "신문" : lang === "es" ? "periódico" : "newspaper", true));
+    wrap.appendChild(field("Pronunciation (kana / IPA / romanization)", "kana", lang === "ja" ? "しんぶん" : lang === "ko" ? "sinmun" : "ˈnjuːzpeɪpər"));
+    wrap.appendChild(field("English meaning", "en", "newspaper", true));
+    wrap.appendChild(field("German (optional)", "de", "Zeitung"));
+
+    // Level dropdown
+    const lvWrap = el("div", { class: "form-field" });
+    lvWrap.appendChild(el("label", { class: "form-label", text: "Level" }));
+    const lvSel = el("select", { class: "ex-input" });
+    meta.levels.forEach((lv) => {
+      const opt = el("option", { value: lv.id, text: lv.name + " — " + lv.subtitle });
+      if (lv.id === (defaultLevel || meta.levels[0].id)) opt.setAttribute("selected", "");
+      lvSel.appendChild(opt);
+    });
+    lvWrap.appendChild(lvSel);
+    wrap.appendChild(lvWrap);
+
+    const buttons = el("div", { style: "display:flex;gap:8px;margin-top:6px;" }, [
+      el("button", { class: "btn ghost", text: "Cancel", onclick: () => UI.closeModal() }),
+      el("button", { class: "btn primary", style: "flex:1;", text: "Save word", onclick: () => {
+        const jp = fields.jp.value.trim();
+        const en = fields.en.value.trim();
+        if (!jp || !en) { toast("Word and English meaning are required.", "bad"); return; }
+        Storage.addCustomCard({
+          jp, kana: fields.kana.value.trim(),
+          en, de: fields.de.value.trim(),
+          level: lvSel.value
+        }, lang);
+        UI.closeModal();
+        toast("Saved! ✨", "good");
+        if (onAdded) onAdded();
+      }})
+    ]);
+    wrap.appendChild(buttons);
+    UI.modal(wrap);
+    setTimeout(() => fields.jp.focus(), 100);
   }
 
   // 3-button self-assessment row (😀 know / 😐 ok / 😕 don't know).
@@ -589,6 +681,19 @@ window.Views = (function () {
       wrap.appendChild(forgetBtn);
     }
 
+    // Delete button — only for user-created custom cards
+    if (card.source === "user" || (card.id || "").startsWith("custom:")) {
+      const delBtn = el("button", { class: "btn warn big", text: "❌ Delete this word (it's yours)", onclick: () => {
+        if (!confirm("Delete \"" + (card.front || card.jp) + "\" permanently? This can't be undone.")) return;
+        Storage.removeCustomCard(card.id, lang);
+        UI.closeModal();
+        UI.toast("Deleted.", "good");
+        if (onChange) onChange();
+        App.refreshTopbar();
+      }});
+      wrap.appendChild(delBtn);
+    }
+
     wrap.appendChild(el("button", { class: "btn ghost", text: "Close", onclick: () => UI.closeModal() }));
     UI.modal(wrap);
   }
@@ -674,9 +779,10 @@ window.Views = (function () {
     viewEl.appendChild(cumCard);
 
     // Per-language progress overview (cards seen / mastered)
-    const pack = getLangPack(lang);
+    const allCards = App.allCards(lang);
+    const customCount = Storage.getCustomCards(lang).length;
     let mastered = 0, learning = 0, seen = 0;
-    pack.ALL_CARDS.forEach((c) => {
+    allCards.forEach((c) => {
       const st = Storage.getCard(c.id, lang);
       if (st) {
         seen += 1;
@@ -687,14 +793,16 @@ window.Views = (function () {
     const learnCard = el("div", { class: "card stat-cum" });
     learnCard.appendChild(el("div", { class: "muted", text: meta.nativeName + " — Word progress" }));
     const lg = el("div", { class: "stat-grid" });
-    lg.appendChild(statBlock("Words seen", `${seen}/${pack.ALL_CARDS.length}`));
+    lg.appendChild(statBlock("Words seen", `${seen}/${allCards.length}`));
     lg.appendChild(statBlock("Learning", learning));
     lg.appendChild(statBlock("Mastered", mastered));
+    lg.appendChild(statBlock("My words", customCount));
     learnCard.appendChild(lg);
-    learnCard.appendChild(progressBar((seen / pack.ALL_CARDS.length) * 100, `linear-gradient(90deg, ${meta.color}, #7dd3fc)`));
+    learnCard.appendChild(progressBar((seen / allCards.length) * 100, `linear-gradient(90deg, ${meta.color}, #7dd3fc)`));
     const wordLinks = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;" }, [
-      el("button", { class: "btn ghost", text: "📖 Show learned", onclick: () => App.go("browse", { initialFilter: "learned" }) }),
-      el("button", { class: "btn ghost", text: "🌟 Show mastered", onclick: () => App.go("browse", { initialFilter: "mastered" }) })
+      el("button", { class: "btn primary", text: "📖 Learned words", onclick: () => App.go("browse", { initialFilter: "learned" }) }),
+      el("button", { class: "btn ghost", text: "🌟 Mastered", onclick: () => App.go("browse", { initialFilter: "mastered" }) }),
+      el("button", { class: "btn ghost", text: "✏️ Add word", onclick: () => showAddWord(lang, () => App.go("profile")) })
     ]);
     learnCard.appendChild(wordLinks);
     viewEl.appendChild(learnCard);

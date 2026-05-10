@@ -160,6 +160,15 @@ function mergeStates(local, remote) {
 
     merged.xp = Math.max(a.xp || 0, b.xp || 0);
     merged.level = Math.max(a.level || 1, b.level || 1);
+
+    // Custom cards: union by id (so user's hand-added words sync across devices)
+    const customA = a.customCards || [];
+    const customB = b.customCards || [];
+    const seenIds = new Set();
+    merged.customCards = [];
+    customA.forEach((c) => { if (c && c.id && !seenIds.has(c.id)) { seenIds.add(c.id); merged.customCards.push(c); } });
+    customB.forEach((c) => { if (c && c.id && !seenIds.has(c.id)) { seenIds.add(c.id); merged.customCards.push(c); } });
+
     out.languages[lang] = merged;
   });
 

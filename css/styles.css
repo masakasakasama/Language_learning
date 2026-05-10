@@ -754,6 +754,29 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
 
 .hidden { display: none !important; }
 
+/* Floating Action Button (used by Browse > Add word) */
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--bottomnav-h) + 16px);
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white;
+  font-size: 28px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(255,126,182,0.45);
+  z-index: 25;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.fab:active { transform: scale(0.92); box-shadow: 0 4px 12px rgba(255,126,182,0.45); }
+
+/* Form field inside the Add-word modal */
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--muted); padding-left: 4px; }
+.form-field .ex-input { text-align: left; padding: 10px 12px; font-size: 14px; }
+.form-field select.ex-input { background: var(--surface); cursor: pointer; }
+
 /* Tiny dev label, fixed bottom-right above the bottom nav */
 .version-tag {
   position: fixed;

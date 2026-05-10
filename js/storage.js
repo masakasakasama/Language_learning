@@ -136,6 +136,46 @@ window.Storage = (function () {
     return (st.marks || {})[cardId] || null;
   }
 
+  // Custom user-created cards. Stored in langState.customCards as full card objects.
+  // Each card has the same shape as built-in vocab cards so the rest of the app
+  // (SRS, marks, browse, review) treats them identically.
+  function addCustomCard(input, lang) {
+    const L = lang || getLang();
+    const st = langState(L);
+    st.customCards = st.customCards || [];
+    const id = "custom:" + L + ":" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+    const card = {
+      id,
+      lang: L,
+      type: "vocab",
+      deck: "custom",
+      level: input.level || "N5",
+      jp: input.jp || input.front || "",
+      kana: input.kana || "",
+      romaji: input.romaji || input.kana || "",
+      en: input.en || input.back || "",
+      de: input.de || "",
+      front: input.jp || input.front || "",
+      back: input.en || input.back || "",
+      hint: input.kana || input.hint || "",
+      speakText: input.kana || input.jp || input.front || "",
+      source: "user",
+      createdAt: new Date().toISOString()
+    };
+    st.customCards.push(card);
+    save();
+    return card;
+  }
+  function getCustomCards(lang) { return langState(lang).customCards || []; }
+  function removeCustomCard(id, lang) {
+    const st = langState(lang);
+    st.customCards = (st.customCards || []).filter((c) => c.id !== id);
+    if (st.cards) delete st.cards[id];
+    if (st.learned) delete st.learned[id];
+    if (st.marks) delete st.marks[id];
+    save();
+  }
+
   // Card status helpers (purely derived from SRS state)
   function cardStatus(cardId, lang) {
     const st = langState(lang).cards[cardId];
@@ -248,6 +288,7 @@ window.Storage = (function () {
     getCard, setCard,
     isLearned, markLearned, learnedSet, forgetCard, cardStatus,
     setMark, getMark,
+    addCustomCard, getCustomCards, removeCustomCard,
     lessonDone, markLessonDone,
     addXP, recordStudyTime, recordCard, recordLesson,
     bumpStreak, getStats, getStreak, getXPTotal,
