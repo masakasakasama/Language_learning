@@ -23,6 +23,7 @@ window.Storage = (function () {
       cards: {},
       lessonsCompleted: {},
       learned: {},
+      marks: {},   // self-assessment: cardId → "know" | "ok" | "dontknow"
       xp: 0,
       level: 1
     };
@@ -113,13 +114,26 @@ window.Storage = (function () {
   // Erase a card's progress completely:
   // - removes its SRS state
   // - removes it from the "learned" set
-  // Useful when the user tapped through too quickly or marked something
-  // they don't actually know.
+  // - clears any self-assessment mark
   function forgetCard(cardId, lang) {
     const st = langState(lang);
     if (st.cards && st.cards[cardId]) delete st.cards[cardId];
     if (st.learned && st.learned[cardId]) delete st.learned[cardId];
+    if (st.marks && st.marks[cardId]) delete st.marks[cardId];
     save();
+  }
+
+  // Self-assessment marks: "know" | "ok" | "dontknow" | null
+  function setMark(cardId, mark, lang) {
+    const st = langState(lang);
+    st.marks = st.marks || {};
+    if (mark == null) delete st.marks[cardId];
+    else st.marks[cardId] = mark;
+    save();
+  }
+  function getMark(cardId, lang) {
+    const st = langState(lang);
+    return (st.marks || {})[cardId] || null;
   }
 
   // Card status helpers (purely derived from SRS state)
@@ -233,6 +247,7 @@ window.Storage = (function () {
     getLang, setLang, langState,
     getCard, setCard,
     isLearned, markLearned, learnedSet, forgetCard, cardStatus,
+    setMark, getMark,
     lessonDone, markLessonDone,
     addXP, recordStudyTime, recordCard, recordLesson,
     bumpStreak, getStats, getStreak, getXPTotal,

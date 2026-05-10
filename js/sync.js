@@ -145,6 +145,19 @@ function mergeStates(local, remote) {
     });
     Object.keys(b.lessonsCompleted || {}).forEach((id) => merged.lessonsCompleted[id] = true);
     Object.keys(b.learned || {}).forEach((id) => merged.learned[id] = true);
+
+    // Self-marks: per-card union; if both sides set the same card to a
+    // different value, prefer remote when remote.writeAt is later
+    const ma = a.marks || {};
+    const mb = b.marks || {};
+    merged.marks = {};
+    const remoteWins = remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt);
+    new Set([...Object.keys(ma), ...Object.keys(mb)]).forEach((id) => {
+      if (ma[id] && !mb[id])      merged.marks[id] = ma[id];
+      else if (!ma[id] && mb[id]) merged.marks[id] = mb[id];
+      else if (ma[id] && mb[id])  merged.marks[id] = remoteWins ? mb[id] : ma[id];
+    });
+
     merged.xp = Math.max(a.xp || 0, b.xp || 0);
     merged.level = Math.max(a.level || 1, b.level || 1);
     out.languages[lang] = merged;

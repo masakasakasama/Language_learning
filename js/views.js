@@ -362,12 +362,15 @@ window.Views = (function () {
 
     viewEl.appendChild(el("div", { class: "view-title", text: meta.nativeName + " — Browse" }));
 
-    // Status filter chips
+    // Status filter chips — self-marks first, then SRS status
     const filters = [
       { id: "all",       label: "All",         desc: "Everything in this level" },
-      { id: "learned",   label: "Learned",     desc: "Cards you've seen at least once" },
-      { id: "learning",  label: "Learning",    desc: "Still in early SRS intervals" },
-      { id: "mastered",  label: "Mastered",    desc: "Interval ≥ 21 days" },
+      { id: "know",      label: "😀 Know",      desc: "Marked as known" },
+      { id: "ok",        label: "😐 OK",        desc: "Marked as so-so" },
+      { id: "dontknow",  label: "😕 Hard",      desc: "Marked as hard" },
+      { id: "unmarked",  label: "Unmarked",    desc: "No self-mark yet" },
+      { id: "learning",  label: "Learning",    desc: "SRS: still in early intervals" },
+      { id: "mastered",  label: "Mastered",    desc: "SRS: interval ≥ 21 days" },
       { id: "untouched", label: "Not started", desc: "Never reviewed" }
     ];
     let activeFilter = opts.initialFilter || "all";
@@ -408,8 +411,12 @@ window.Views = (function () {
 
     function passesFilter(c) {
       const status = Storage.cardStatus(c.id, lang);
+      const mark = Storage.getMark(c.id, lang);
       if (activeFilter === "all") return true;
-      if (activeFilter === "learned") return status !== "untouched";
+      if (activeFilter === "know")     return mark === "know";
+      if (activeFilter === "ok")       return mark === "ok";
+      if (activeFilter === "dontknow") return mark === "dontknow";
+      if (activeFilter === "unmarked") return !mark;
       if (activeFilter === "learning") return status === "learning" || status === "new";
       if (activeFilter === "mastered") return status === "mastered";
       if (activeFilter === "untouched") return status === "untouched";
@@ -456,13 +463,17 @@ window.Views = (function () {
         const grid = el("div", { class: "browse-grid" });
         filtered.forEach((c) => {
           const status = Storage.cardStatus(c.id, lang);
-          const item = el("button", { class: "browse-card status-" + status });
+          const mark = Storage.getMark(c.id, lang);
+          const item = el("div", { class: "browse-card status-" + status + (mark ? " mark-" + mark : "") });
           item.appendChild(statusDot(status));
-          item.appendChild(el("div", { class: "bc-front", text: c.front || c.jp }));
-          item.appendChild(el("div", { class: "bc-back", text: c.back || c.en }));
-          if (c.de) item.appendChild(el("div", { class: "bc-back tr-de", text: c.de }));
-          if (c.kana && c.kana !== c.front) item.appendChild(el("div", { class: "bc-hint", text: c.kana }));
-          item.onclick = () => showWordDetail(c, lang, () => renderLevel());
+          const body = el("button", { class: "browse-card-body" });
+          body.appendChild(el("div", { class: "bc-front", text: c.front || c.jp }));
+          body.appendChild(el("div", { class: "bc-back", text: c.back || c.en }));
+          if (c.de) body.appendChild(el("div", { class: "bc-back tr-de", text: c.de }));
+          if (c.kana && c.kana !== c.front) body.appendChild(el("div", { class: "bc-hint", text: c.kana }));
+          body.onclick = () => showWordDetail(c, lang, () => renderLevel());
+          item.appendChild(body);
+          item.appendChild(markRow(c.id, lang, mark, () => renderLevel()));
           grid.appendChild(item);
         });
         block.appendChild(grid);
@@ -471,6 +482,32 @@ window.Views = (function () {
       summary.textContent = `Showing ${totalShown} of ${totalAll} cards · ${activeFilter}`;
     }
     renderLevel();
+  }
+
+  // 3-button self-assessment row (😀 know / 😐 ok / 😕 don't know).
+  // Tapping the active mark un-marks (toggle).
+  function markRow(cardId, lang, currentMark, onChange) {
+    const row = el("div", { class: "mark-row" });
+    const opts = [
+      { id: "know",     icon: "😀", title: "I know this" },
+      { id: "ok",       icon: "😐", title: "Kind of" },
+      { id: "dontknow", icon: "😕", title: "Hard / don't know" }
+    ];
+    opts.forEach((o) => {
+      const isActive = currentMark === o.id;
+      const btn = el("button", {
+        class: "mark-btn mark-" + o.id + (isActive ? " active" : ""),
+        title: o.title,
+        text: o.icon
+      });
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        Storage.setMark(cardId, isActive ? null : o.id, lang);
+        if (onChange) onChange();
+      };
+      row.appendChild(btn);
+    });
+    return row;
   }
 
   function showWordDetail(card, lang, onChange) {
@@ -488,6 +525,16 @@ window.Views = (function () {
     if (card.hint) wrap.appendChild(el("div", { class: "wd-hint", text: card.hint }));
 
     wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));
+
+    // Self-assessment row
+    const currentMark = Storage.getMark(card.id, lang);
+    wrap.appendChild(el("div", { class: "muted small", style:"margin-top:4px;", text: "How well do you know this?" }));
+    wrap.appendChild(markRow(card.id, lang, currentMark, () => {
+      // re-open the modal to reflect the new mark; also refresh the underlying view
+      UI.closeModal();
+      showWordDetail(card, lang, onChange);
+      if (onChange) onChange();
+    }));
 
     // Status panel
     const statusBlock = el("div", { class: "wd-status" });

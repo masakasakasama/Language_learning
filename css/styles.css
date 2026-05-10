@@ -515,11 +515,39 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .dot-yellow { background: #fcd34d; }
 .dot-green  { background: var(--good); }
 
-.browse-card { position: relative; }
+.browse-card { position: relative; padding: 0; display: flex; flex-direction: column; cursor: default; overflow: hidden; }
+.browse-card-body { padding: 10px 8px 6px; background: transparent; border: none; cursor: pointer; }
 .browse-card.status-mastered { border-color: var(--good); }
 .browse-card.status-learning { border-color: var(--warn); }
 .browse-card.status-review   { border-color: var(--accent-2); }
 .browse-card.status-new      { border-color: var(--accent-2); }
+
+/* Self-assessment marks override SRS colors with a thicker, brighter border */
+.browse-card.mark-know     { border: 2px solid #5fb86b; background: linear-gradient(180deg, rgba(95,184,107,0.10), transparent 70%); }
+.browse-card.mark-ok       { border: 2px solid #fcd34d; background: linear-gradient(180deg, rgba(252,211,77,0.13), transparent 70%); }
+.browse-card.mark-dontknow { border: 2px solid #ef6f7c; background: linear-gradient(180deg, rgba(239,111,124,0.13), transparent 70%); }
+
+/* 3-button mark row at the bottom of each card */
+.mark-row {
+  display: flex;
+  border-top: 1px dashed var(--border);
+  background: var(--surface-2);
+}
+.mark-btn {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 16px;
+  border-right: 1px dashed var(--border);
+  opacity: 0.5;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.mark-btn:last-child { border-right: none; }
+.mark-btn:hover { opacity: 0.85; }
+.mark-btn:active { transform: scale(0.92); }
+.mark-btn.active { opacity: 1; transform: scale(1.15); }
+.mark-btn.mark-know.active     { background: rgba(95,184,107,0.2); }
+.mark-btn.mark-ok.active       { background: rgba(252,211,77,0.25); }
+.mark-btn.mark-dontknow.active { background: rgba(239,111,124,0.2); }
 
 /* Word detail modal */
 .word-detail { display: flex; flex-direction: column; gap: 10px; padding: 4px; align-items: stretch; text-align: center; }
@@ -653,3 +681,18 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .lang-name { font-weight: 700; font-size: 16px; }
 
 .hidden { display: none !important; }
+
+/* Tiny dev label, fixed bottom-right above the bottom nav */
+.version-tag {
+  position: fixed;
+  bottom: calc(var(--bottomnav-h) + 4px);
+  right: 8px;
+  font-size: 9px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  opacity: 0.45;
+  z-index: 5;
+  pointer-events: none;
+  user-select: none;
+}
