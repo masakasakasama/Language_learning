@@ -657,6 +657,15 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
   margin-top: 8px;
 }
 .sync-help summary { cursor: pointer; font-weight: 600; font-size: 13px; padding: 4px 0; }
+.setup-step {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 4px 0;
+}
+.setup-step a { color: var(--accent); }
+.setup-step code { background: var(--bg-2); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 11px; }
+
 .sync-rules {
   background: var(--bg-2);
   padding: 10px;

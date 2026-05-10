@@ -222,8 +222,25 @@ window.Exercises = (function () {
       wrap.appendChild(exWrap);
     }
 
-    const cont = el("button", { class: "btn primary big", text: "Got it →", onclick: onContinue });
-    wrap.appendChild(cont);
+    // 3-button self-assessment: Easy / OK / Hard.
+    // Each calls onContinue(markId) so the lesson runner can record the mark.
+    const markPanel = el("div", { class: "intro-marks" });
+    markPanel.appendChild(el("div", { class: "muted small center", style:"margin-bottom:6px;", text: "How well do you know this?" }));
+    const row = el("div", { class: "mark-row mark-row-big" });
+    [
+      { id: "know",     icon: "😀", label: "Easy" },
+      { id: "ok",       icon: "😐", label: "OK" },
+      { id: "dontknow", icon: "😕", label: "Hard" }
+    ].forEach((o) => {
+      const btn = el("button", { class: "mark-btn mark-btn-big mark-" + o.id }, [
+        el("div", { class: "mark-icon", text: o.icon }),
+        el("div", { class: "mark-label-txt", text: o.label })
+      ]);
+      btn.onclick = () => onContinue(o.id);
+      row.appendChild(btn);
+    });
+    markPanel.appendChild(row);
+    wrap.appendChild(markPanel);
 
     container.appendChild(wrap);
     // auto-play

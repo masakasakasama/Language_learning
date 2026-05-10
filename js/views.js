@@ -198,7 +198,8 @@ window.Views = (function () {
         // Mark first-seen
         if (!Storage.isLearned(step.card.id, lang)) Storage.markLearned(step.card.id, lang);
         const examples = App.examplesFor(step.card.id, lang);
-        Exercises.renderIntro(step.card, stage, () => {
+        Exercises.renderIntro(step.card, stage, (mark) => {
+          if (mark) Storage.setMark(step.card.id, mark, lang);
           handleAnswer(true, step.card, /*xp*/2);
         }, examples);
       } else if (step.kind === "practice" || step.kind === "mc") {
@@ -886,16 +887,33 @@ service cloud.firestore {
 
   function showSyncSetup() {
     const wrap = el("div", { class: "lang-picker" });
-    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Set up Firebase sync" }));
-    wrap.appendChild(el("div", { class: "muted small", html:
-      "1. Open <b>console.firebase.google.com</b><br>" +
-      "2. Create a project (free)<br>" +
-      "3. Add a <b>Web app</b> — copy the firebaseConfig object<br>" +
-      "4. Enable <b>Authentication → Google</b> (and/or Anonymous)<br>" +
-      "5. Create a <b>Firestore Database</b> (test mode is fine to start)<br>" +
-      "6. Paste the config below 👇"
-    }));
-    const ta = el("textarea", { class: "ex-input", style: "min-height:160px;font-family:monospace;font-size:12px;text-align:left;width:100%;",
+    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Set up cloud sync" }));
+
+    // Step 1
+    wrap.appendChild(el("div", { class: "setup-step", html:
+      "<b>① Create</b> a free Firebase project at <a href='https://console.firebase.google.com' target='_blank' rel='noopener'>console.firebase.google.com</a>, then create a <b>Firestore Database</b>." }));
+
+    // Step 2 — permanent rules upfront (no 30-day surprise)
+    wrap.appendChild(el("div", { class: "setup-step", html:
+      "<b>② Paste these rules</b> in Firestore → Rules → Publish. (This makes sync work forever — no 30-day test-mode expiry.)" }));
+    const rules = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /sync/{code}/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`;
+    wrap.appendChild(el("pre", { class: "sync-rules", text: rules }));
+    wrap.appendChild(el("button", { class: "btn ghost", style: "margin-bottom:8px;", text: "📋 Copy rules", onclick: async () => {
+      try { await navigator.clipboard.writeText(rules); toast("Rules copied — paste into Firebase Console.", "good"); }
+      catch (e) { toast("Long-press the rules above to copy.", "bad"); }
+    }}));
+
+    // Step 3
+    wrap.appendChild(el("div", { class: "setup-step", html:
+      "<b>③ Project Settings → Web app</b> → register an app → copy <code>firebaseConfig</code> and paste below:" }));
+    const ta = el("textarea", { class: "ex-input", style: "min-height:140px;font-family:monospace;font-size:11px;text-align:left;width:100%;",
       placeholder: '{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "...",\n  "appId": "..."\n}' });
     wrap.appendChild(ta);
     function parseConfig() {
