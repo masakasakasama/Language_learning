@@ -40,7 +40,6 @@ window.App = (function () {
     document.getElementById("lang-name").textContent = meta.nativeName;
     document.getElementById("stat-streak").textContent = Storage.getStreak().current;
     document.getElementById("stat-xp").textContent = Storage.langState(lang).xp;
-    document.getElementById("stat-hearts").textContent = Storage.getHearts(lang);
     const due = SRS.countDue(pack.ALL_CARDS, lang);
     document.getElementById("stat-due").textContent = due;
     const badge = document.getElementById("nav-due-badge");

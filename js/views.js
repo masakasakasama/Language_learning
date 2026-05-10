@@ -41,7 +41,7 @@ window.Views = (function () {
     let mood = "happy";
     let bubble = "Let's learn some " + meta.name + "! 💖";
     if (due > 0) { mood = "thinking"; bubble = `You have <b>${due}</b> card${due===1?"":"s"} to review. 🔄`; }
-    if (today.cards >= goalCards) { mood = "proud"; bubble = "Goal reached! Keep going? ✨"; }
+    if (today.cards >= goalCards) { mood = "proud"; bubble = "Daily goal reached! ✨"; }
     viewEl.appendChild(mascot(mood, bubble));
 
     // Levels with units
@@ -140,14 +140,10 @@ window.Views = (function () {
     const progressWrap = el("div", { class: "lesson-progress-wrap" });
     const progress = progressBar(0, "linear-gradient(90deg,#a8e6a3,#7dd3fc)");
     progressWrap.appendChild(progress);
-    const heartsEl = el("div", { class: "lesson-hearts" });
-    refreshHearts();
-    function refreshHearts() {
-      heartsEl.innerHTML = "❤️ " + Storage.getHearts(lang);
-    }
+    const counterEl = el("div", { class: "lesson-hearts", text: "0/" + totalSteps });
     head.appendChild(exitBtn);
     head.appendChild(progressWrap);
-    head.appendChild(heartsEl);
+    head.appendChild(counterEl);
     viewEl.appendChild(head);
 
     const stage = el("div", { class: "lesson-stage" });
@@ -156,6 +152,7 @@ window.Views = (function () {
     function bumpProgress() {
       const fill = progress.querySelector(".progress-fill");
       fill.style.width = Math.min(100, (stepIdx / totalSteps) * 100) + "%";
+      counterEl.textContent = `${Math.min(stepIdx, totalSteps)}/${totalSteps}`;
     }
 
     // Build steps
@@ -247,7 +244,6 @@ window.Views = (function () {
           Storage.setCard(card.id, ns, lang);
         }
       } else {
-        Storage.loseHeart(lang);
         Storage.recordCard(false, 0);
         if (card) {
           const old = Storage.getCard(card.id, lang);
@@ -256,19 +252,8 @@ window.Views = (function () {
           mistakes.push(card);
         }
       }
-      refreshHearts();
       App.refreshTopbar();
-      const hearts = Storage.getHearts(lang);
-      if (hearts <= 0) { failOut(); return; }
       setTimeout(nextStep, 100);
-    }
-
-    function failOut() {
-      clear(stage);
-      const wrap = el("div", { class: "lesson-fail" });
-      wrap.appendChild(mascot("sad", "Out of hearts! Take a break and come back later 🍵"));
-      wrap.appendChild(el("button", { class: "btn primary big", onclick: () => App.go("home"), text: "Back home" }));
-      stage.appendChild(wrap);
     }
 
     function finish() {
@@ -569,47 +554,103 @@ window.Views = (function () {
     refreshSyncPill();
 
     if (!window.Sync || !window.Sync.isConfigured()) {
-      const setup = el("button", { class: "btn primary", text: "Set up sync", onclick: showSyncSetup });
-      card.appendChild(setup);
+      const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
+        el("button", { class: "btn primary", text: "Set up sync", onclick: showSyncSetup }),
+        el("button", { class: "btn ghost", text: "I have a code", onclick: showJoinByCode })
+      ]);
+      card.appendChild(row);
       const help = el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
-        html: "Free with a Firebase project. We store your progress in your own Firestore — no third-party servers." });
+        html: "Free with your own Firebase project. After setup, just copy a sync code into your other device — no Google login required." });
       card.appendChild(help);
       return card;
     }
 
-    const user = window.Sync.user();
-    if (user) {
-      const info = el("div", { class: "sync-user" }, [
-        el("div", { text: user.displayName || user.email || "Anonymous" }),
-        el("div", { class: "muted small", text: user.uid.slice(0, 12) + "…" })
-      ]);
-      card.appendChild(info);
-      const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
-        el("button", { class: "btn ghost", text: "Force sync now", onclick: () => window.Sync.pushNow() }),
-        el("button", { class: "btn ghost", text: "Sign out", onclick: async () => { await window.Sync.signOut(); App.go("profile"); } })
-      ]);
-      card.appendChild(row);
-    } else {
-      const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
-        el("button", { class: "btn primary", text: "Sign in with Google", onclick: async () => {
-          try { await window.Sync.signInGoogle(); App.go("profile"); }
-          catch (e) { toast("Sign-in failed: " + e.message, "bad"); }
+    // Configured
+    const mode = window.Sync.getMode();
+    if (mode === "code") {
+      const code = window.Sync.getCode();
+      const payload = window.Sync.buildSharePayload();
+      const codeWrap = el("div", { class: "sync-code-wrap" });
+      codeWrap.appendChild(el("div", { class: "muted small", text: "Your sync code (paste this into your other device):" }));
+      codeWrap.appendChild(el("div", { class: "sync-code", text: code || "—" }));
+      const buttons = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
+        el("button", { class: "btn ghost", text: "📋 Copy share string", onclick: async () => {
+          if (!payload) return;
+          try { await navigator.clipboard.writeText(payload); toast("Copied! Paste this on your other device.", "good"); }
+          catch (e) { toast("Copy failed — long-press to copy:<br><code>" + payload + "</code>", "bad"); }
         }}),
-        el("button", { class: "btn ghost", text: "Anonymous", onclick: async () => {
-          try { await window.Sync.signInAnon(); App.go("profile"); }
-          catch (e) { toast("Sign-in failed: " + e.message, "bad"); }
-        }})
+        el("button", { class: "btn ghost", text: "Show QR", onclick: () => showQR(payload) }),
+        el("button", { class: "btn ghost", text: "Force sync", onclick: () => window.Sync.pushNow() })
       ]);
-      card.appendChild(row);
+      card.appendChild(codeWrap);
+      card.appendChild(buttons);
+    } else {
+      // user mode (Google)
+      const user = window.Sync.user();
+      if (user) {
+        const info = el("div", { class: "sync-user" }, [
+          el("div", { text: user.displayName || user.email || "Signed in" }),
+          el("div", { class: "muted small", text: user.uid.slice(0, 12) + "…" })
+        ]);
+        card.appendChild(info);
+        const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
+          el("button", { class: "btn ghost", text: "Force sync", onclick: () => window.Sync.pushNow() }),
+          el("button", { class: "btn ghost", text: "Sign out", onclick: async () => { await window.Sync.signOut(); App.go("profile"); } })
+        ]);
+        card.appendChild(row);
+      } else {
+        const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
+          el("button", { class: "btn primary", text: "Sign in with Google", onclick: async () => {
+            try { await window.Sync.signInGoogle(); App.go("profile"); }
+            catch (e) { toast("Sign-in failed: " + e.message, "bad"); }
+          }})
+        ]);
+        card.appendChild(row);
+      }
     }
-    const reset = el("button", { class: "btn warn ghost", style: "margin-top:8px;", text: "Disconnect / change project", onclick: () => {
+    const reset = el("button", { class: "btn warn ghost", style: "margin-top:8px;", text: "Disconnect", onclick: () => {
       if (confirm("Disconnect cloud sync? Local progress is kept.")) {
-        window.Sync.unsetConfig();
+        window.Sync.disconnect();
         App.go("profile");
       }
     }});
     card.appendChild(reset);
     return card;
+  }
+
+  function showQR(payload) {
+    if (!payload) { toast("No code yet", "bad"); return; }
+    const wrap = el("div", { class: "lang-picker" });
+    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Scan this on your other device" }));
+    const url = "https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=" + encodeURIComponent(payload);
+    const img = el("img", { src: url, alt: "Sync QR", style: "display:block;margin:0 auto;border-radius:14px;background:white;padding:8px;width:280px;height:280px;" });
+    wrap.appendChild(img);
+    wrap.appendChild(el("div", { class: "muted small center", text: "Or copy and paste this:" }));
+    const ta = el("textarea", { class: "ex-input", style: "min-height:100px;font-family:monospace;font-size:11px;width:100%;", text: payload });
+    ta.value = payload;
+    wrap.appendChild(ta);
+    wrap.appendChild(el("button", { class: "btn primary big", text: "Done", onclick: () => UI.closeModal() }));
+    UI.modal(wrap);
+  }
+
+  function showJoinByCode() {
+    const wrap = el("div", { class: "lang-picker" });
+    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Join from another device" }));
+    wrap.appendChild(el("div", { class: "muted small", html:
+      "Paste the share string you copied from your other device (it starts with <code>mochi1:</code>). It contains both the Firebase config and your sync code so you don't need to set them separately." }));
+    const ta = el("textarea", { class: "ex-input", style: "min-height:120px;font-family:monospace;font-size:11px;width:100%;", placeholder: "mochi1:..." });
+    wrap.appendChild(ta);
+    wrap.appendChild(el("button", { class: "btn primary big", text: "Join sync", onclick: async () => {
+      try {
+        await window.Sync.setupFromSharePayload(ta.value.trim());
+        UI.closeModal();
+        toast("Joined! Your devices will sync now.", "good");
+        setTimeout(() => App.go("profile"), 600);
+      } catch (e) {
+        toast("Failed: " + e.message, "bad");
+      }
+    }}));
+    UI.modal(wrap);
   }
 
   function refreshSyncPill() {
@@ -643,31 +684,38 @@ window.Views = (function () {
     const ta = el("textarea", { class: "ex-input", style: "min-height:160px;font-family:monospace;font-size:12px;text-align:left;width:100%;",
       placeholder: '{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "...",\n  "appId": "..."\n}' });
     wrap.appendChild(ta);
-    const save = el("button", { class: "btn primary big", text: "Save & connect", onclick: () => {
+    function parseConfig() {
       let cfg;
-      try {
-        let txt = ta.value.trim();
-        if (txt.startsWith("const") || txt.startsWith("let") || txt.startsWith("var")) {
-          // user pasted "const firebaseConfig = {...};"
-          txt = txt.replace(/^[^=]*=\s*/, "").replace(/;$/, "");
-        }
-        // try JSON, then JS-object eval-lite
-        try { cfg = JSON.parse(txt); }
-        catch (e) { cfg = (new Function("return (" + txt + ")"))(); }
-      } catch (e) {
-        toast("Invalid config: " + e.message, "bad");
-        return;
+      let txt = ta.value.trim();
+      if (txt.startsWith("const") || txt.startsWith("let") || txt.startsWith("var")) {
+        txt = txt.replace(/^[^=]*=\s*/, "").replace(/;$/, "");
       }
-      if (!cfg || !cfg.apiKey || !cfg.projectId) {
-        toast("Need at least apiKey + projectId", "bad");
-        return;
-      }
-      window.Sync.setConfig(cfg);
-      UI.closeModal();
-      toast("Sync configured! Now sign in.", "good");
-      App.go("profile");
-    }});
-    wrap.appendChild(save);
+      try { cfg = JSON.parse(txt); }
+      catch (e) { cfg = (new Function("return (" + txt + ")"))(); }
+      if (!cfg || !cfg.apiKey || !cfg.projectId) throw new Error("Need at least apiKey + projectId");
+      return cfg;
+    }
+    const buttons = el("div", { style: "display:flex;flex-direction:column;gap:8px;" }, [
+      el("button", { class: "btn primary big", text: "Generate sync code (recommended)", onclick: async () => {
+        try {
+          const cfg = parseConfig();
+          const code = await window.Sync.setupCodeMode(cfg);
+          UI.closeModal();
+          toast("Code generated: " + code, "good");
+          App.go("profile");
+        } catch (e) { toast("Failed: " + e.message, "bad"); }
+      }}),
+      el("button", { class: "btn ghost", text: "Use Google sign-in instead", onclick: async () => {
+        try {
+          const cfg = parseConfig();
+          await window.Sync.setupUserMode(cfg);
+          UI.closeModal();
+          toast("Configured. Now sign in with Google.", "good");
+          App.go("profile");
+        } catch (e) { toast("Failed: " + e.message, "bad"); }
+      }})
+    ]);
+    wrap.appendChild(buttons);
     UI.modal(wrap);
   }
 

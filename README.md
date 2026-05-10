@@ -19,7 +19,6 @@ For each language, lessons are organized into level-appropriate units with vocab
 - **Multiple exercise types** — flashcard intro, multiple choice, listening, typing
 - **Grammar lessons** — explanations + examples + practice quizzes
 - **Spaced repetition (SRS)** — Anki-style SM-2: when you miss a card you see it again sooner; cards you nail get pushed out further into the future
-- **Hearts (lives)** — wrong answers cost a heart; hearts regenerate over time
 - **Streak, XP, and per-language progress**
 - **Stats dashboard** (Profile tab):
   - Today: minutes studied, cards reviewed, lessons, accuracy, XP
@@ -76,24 +75,39 @@ Nothing leaves your device. To wipe it: open Profile → "Reset all progress", o
 
 ## Cloud sync (across phone & desktop)
 
-Mochi can sync your progress across devices using **Firebase** (your own free project). Each device pulls and pushes the same state, with a smart per-field merger so a heart lost on your phone still costs you on desktop, an XP gain stays as a max, etc.
+Mochi syncs your progress across devices via **Firebase Firestore** (your own free project). **Two modes**:
 
-### One-time setup
+### Mode A — Sync code *(recommended, no Google login)*
 
-1. Open https://console.firebase.google.com and create a project (free)
-2. **Build → Authentication** → enable **Google** sign-in (and/or **Anonymous**)
-3. **Build → Firestore Database** → Create → start in *test mode* (you can lock it down later, see rules below)
-4. **Project Settings → Your apps → Web** → register an app and copy the `firebaseConfig` object
-5. In the Mochi app, go to **Profile → ☁️ Cloud sync → Set up sync**, paste the config, save
-6. Sign in with Google
-7. On your other device: open Mochi, paste the **same** config, sign in with the **same** Google account → progress syncs in real time
+Easiest. One device generates a sync code, the other device pastes it. Both devices share one Firestore doc.
 
-### Recommended Firestore rules
+1. Open https://console.firebase.google.com → create a free project
+2. **Build → Firestore Database** → Create (start in *test mode*)
+3. **Build → Authentication** → enable **Anonymous** (Mochi signs in invisibly so Firestore can identify devices)
+4. **Project Settings → Your apps → Web** → register and copy the `firebaseConfig` object
+5. On device A: **Profile → ☁️ Cloud sync → Set up sync** → paste config → **Generate sync code**
+6. Tap **📋 Copy share string** (it begins with `mochi1:` and packs both your config and the sync code into one string)
+7. On device B: **Profile → ☁️ Cloud sync → I have a code** → paste the share string → done
+
+That's it — no Google login, no double config entry. Works for "yourself + family" use.
+
+### Mode B — Google sign-in (alt)
+
+Use this if you want strong identity per user. After **Set up sync**, choose **Use Google sign-in instead** and sign in with the same Google account on each device.
+
+### Firestore rules
+
+For sync-code mode (anonymous auth, scoped to `sync/*`):
 
 ```js
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Anonymous-auth required, anyone with the random sync code can read/write that doc
+    match /sync/{code}/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    // Google sign-in mode
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
@@ -101,7 +115,7 @@ service cloud.firestore {
 }
 ```
 
-Each user can only access their own state document.
+Sync codes are 16 random base32 characters (split as `XXXX-XXXX-XXXX-XXXX`) — practically un-guessable, so they act as a shared secret.
 
 ### Merge behavior
 

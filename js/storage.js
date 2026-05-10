@@ -17,16 +17,12 @@
 // }
 window.Storage = (function () {
   const KEY = "mochi.v1";
-  const HEART_REGEN_MIN = 30;     // 1 heart every 30 minutes
-  const MAX_HEARTS = 5;
 
   function defaultLangState() {
     return {
       cards: {},
       lessonsCompleted: {},
       learned: {},
-      hearts: MAX_HEARTS,
-      heartsRefilledAt: new Date().toISOString(),
       xp: 0,
       level: 1
     };
@@ -112,37 +108,6 @@ window.Storage = (function () {
   }
   function markLessonDone(lessonId, lang) {
     langState(lang).lessonsCompleted[lessonId] = true; save();
-  }
-
-  // Hearts
-  function getHearts(lang) {
-    const st = langState(lang);
-    // Regenerate hearts based on time elapsed
-    const now = Date.now();
-    const last = new Date(st.heartsRefilledAt).getTime();
-    const minutesPassed = Math.floor((now - last) / 60000);
-    const heartsToAdd = Math.floor(minutesPassed / HEART_REGEN_MIN);
-    if (heartsToAdd > 0 && st.hearts < MAX_HEARTS) {
-      st.hearts = Math.min(MAX_HEARTS, st.hearts + heartsToAdd);
-      st.heartsRefilledAt = new Date(last + heartsToAdd * HEART_REGEN_MIN * 60000).toISOString();
-      save();
-    }
-    return st.hearts;
-  }
-  function loseHeart(lang) {
-    const st = langState(lang);
-    if (st.hearts >= MAX_HEARTS) {
-      st.heartsRefilledAt = new Date().toISOString();
-    }
-    st.hearts = Math.max(0, st.hearts - 1);
-    save();
-    return st.hearts;
-  }
-  function gainHeart(lang) {
-    const st = langState(lang);
-    st.hearts = Math.min(MAX_HEARTS, st.hearts + 1);
-    save();
-    return st.hearts;
   }
 
   // XP and stats
@@ -246,7 +211,6 @@ window.Storage = (function () {
     getCard, setCard,
     isLearned, markLearned, learnedSet,
     lessonDone, markLessonDone,
-    getHearts, loseHeart, gainHeart, MAX_HEARTS,
     addXP, recordStudyTime, recordCard, recordLesson,
     bumpStreak, getStats, getStreak, getXPTotal,
     getStatsForRange, getCumulativeStats, todayStats,
