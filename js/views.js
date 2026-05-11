@@ -136,9 +136,13 @@ window.Views = (function () {
     try {
       const root = Storage.load();
       const currentCards = Storage.countCards ? Storage.countCards(root) : 0;
+      const wasOnboarded = !!root.onboarded;
       const lk = window.LAST_KNOWN_DATA;
       let lkCards = 0;
-      if (lk) Object.values(lk.languages || {}).forEach((s) => { lkCards += Object.keys((s && s.cards) || {}).length; });
+      // Only consider the baked LAST_KNOWN data on devices that have already
+      // been onboarded — otherwise we'd be inviting brand-new users to import
+      // somebody else's progress.
+      if (wasOnboarded && lk) Object.values(lk.languages || {}).forEach((s) => { lkCards += Object.keys((s && s.cards) || {}).length; });
       const snaps = (Storage.getSnapshots && Storage.getSnapshots()) || [];
       const bigSnap = snaps.reduce((a, b) => (a && (a.cardCount || 0) >= (b.cardCount || 0) ? a : b), null);
       if (currentCards === 0 && (lkCards > 0 || (bigSnap && bigSnap.cardCount > 0))) {
@@ -340,6 +344,15 @@ window.Views = (function () {
     }
 
     function nextStep() {
+      try { return _nextStep(); }
+      catch (e) {
+        console.warn("[lesson] nextStep threw", e);
+        UI.toast("Lesson hiccup — skipping a step. (Check console for details.)", "bad");
+        // Try to continue with the step after this one, otherwise finish.
+        try { if (stepIdx < steps.length) { stepIdx += 1; setTimeout(nextStep, 50); } else { finish(); } } catch (_) {}
+      }
+    }
+    function _nextStep() {
       bumpProgress();
       if (stepIdx >= steps.length) {
         if (mistakes.length) {
@@ -357,6 +370,14 @@ window.Views = (function () {
     }
 
     function runStep(step) {
+      try { return _runStep(step); }
+      catch (e) {
+        console.warn("[lesson] runStep threw", e, step);
+        UI.toast("Step error: " + (e && e.message || e), "bad");
+        setTimeout(nextStep, 200);
+      }
+    }
+    function _runStep(step) {
       if (step.kind === "intro") {
         // Mark first-seen
         if (!Storage.isLearned(step.card.id, lang)) Storage.markLearned(step.card.id, lang);

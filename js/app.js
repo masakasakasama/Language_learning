@@ -169,12 +169,15 @@ window.App = (function () {
       const snaps = (Storage.getSnapshots && Storage.getSnapshots()) || [];
       const root = Storage.load();
       const currentCards = Storage.countCards ? Storage.countCards(root) : 0;
+      const wasOnboarded = !!root.onboarded;
       // Find the biggest snapshot
       let best = null;
       snaps.forEach((s) => { if (!best || (s.cardCount || 0) > (best.cardCount || 0)) best = s; });
-      // Also consider the baked LAST_KNOWN data as a fallback offer
+      // Only consider the baked LAST_KNOWN data on devices that have already
+      // been onboarded (otherwise we'd be pushing someone else's progress at
+      // a brand-new user).
       let lastKnownCards = 0;
-      if (window.LAST_KNOWN_DATA) {
+      if (wasOnboarded && window.LAST_KNOWN_DATA) {
         Object.values(window.LAST_KNOWN_DATA.languages || {}).forEach((s) => {
           lastKnownCards += Object.keys((s && s.cards) || {}).length;
         });
@@ -182,10 +185,8 @@ window.App = (function () {
       const hasBigSnap = best && (best.cardCount || 0) > currentCards + 2;
       const hasBigLastKnown = lastKnownCards > currentCards + 2;
       if (!hasBigSnap && !hasBigLastKnown) return;
-      // Don't spam: remember we offered recovery this session
       if (window.__mumuRecoveryOffered) return;
       window.__mumuRecoveryOffered = true;
-      // Build a modal
       const { el } = UI;
       const wrap = el("div", { class: "lang-picker" });
       wrap.appendChild(el("div", { class: "lang-picker-title", text: "🛟 Data recovery" }));
@@ -205,7 +206,8 @@ window.App = (function () {
       if (hasBigLastKnown) {
         wrap.appendChild(el("button", { class: "btn warn big", style:"margin-top:8px;", text:
           "Restore last-known data (" + lastKnownCards + " cards, baked in)", onclick: () => {
-            try { Storage.downloadBackup(); } catch (e) {}
+            // Only auto-backup if there's actually something to back up
+            if (currentCards > 0) { try { Storage.downloadBackup(); } catch (e) {} }
             Storage.importData(JSON.stringify(window.LAST_KNOWN_DATA), /* merge */ true);
             UI.closeModal();
             UI.toast("Restored " + lastKnownCards + " cards ✨", "good");

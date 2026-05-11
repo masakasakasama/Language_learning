@@ -1,0 +1,26 @@
+{
+  "name": "mumu - Language Learning",
+  "short_name": "mumu",
+  "description": "Cute language learning app for Japanese, Korean, English and Spanish",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff7fb",
+  "theme_color": "#ffd6e7",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "assets/mumu.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/mumu.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}

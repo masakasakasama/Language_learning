@@ -1,4 +1,4 @@
-# 🍡 Mochi — Cute language learning app
+# 🐰 mumu — Cute language learning app
 
 A Duolingo-meets-Anki style language learning app for English speakers. Cute pastel design, SRS spaced repetition, audio pronunciation, level-aware learning paths, and a stats dashboard.
 
@@ -75,7 +75,7 @@ Nothing leaves your device. To wipe it: open Profile → "Reset all progress", o
 
 ## Cloud sync (across phone & desktop)
 
-Mochi syncs your progress across devices via **Firebase Firestore** (your own free project). **Two modes**:
+mumu syncs your progress across devices via **Firebase Firestore**. The Firebase config is baked into the app and every device on this URL writes to the same Firestore document, so sync is **fully automatic** — no codes, no setup.
 
 ### Mode A — Sync code *(recommended, no login of any kind)*
 
