@@ -1172,7 +1172,24 @@ window.Views = (function () {
     const backup = el("div", { class: "card backup-card" });
     backup.appendChild(el("div", { class: "muted", text: "📦 Backup" }));
     backup.appendChild(el("div", { class: "muted small", style:"line-height:1.5;",
-      html: "Save your whole progress as a file. Import it later to restore everything (SRS schedule, marks, custom words, stats)." }));
+      html: "Saves the WHOLE app state (all 4 languages, custom words, marks, review schedule, stats and daily achievements)." }));
+
+    // Show what's currently inside the file so the user knows it's not "just one language"
+    const root = Storage.load();
+    let totalReviewed = 0, totalCustom = 0, totalMarks = 0, totalDays = 0;
+    Object.values(root.languages || {}).forEach((s) => {
+      totalReviewed += Object.keys(s.cards || {}).length;
+      totalCustom += (s.customCards || []).length;
+      totalMarks += Object.keys(s.marks || {}).length;
+    });
+    totalDays = Object.keys((root.stats && root.stats.byDate) || {}).length;
+    backup.appendChild(el("div", { class: "muted small", style:"margin-top:6px;padding:6px 10px;background:var(--surface-2);border-radius:10px;line-height:1.6;",
+      html: `Inside right now: <b>${Object.keys(root.languages||{}).length}</b> languages · ` +
+            `<b>${totalReviewed}</b> reviewed cards · ` +
+            `<b>${totalCustom}</b> custom words · ` +
+            `<b>${totalMarks}</b> self-marks · ` +
+            `<b>${totalDays}</b> days of stats.`
+    }));
     const backupRow = el("div", { style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;" });
     backupRow.appendChild(el("button", { class: "btn primary", text: "📥 Export backup", onclick: () => {
       Storage.downloadBackup();

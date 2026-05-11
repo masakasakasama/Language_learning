@@ -132,6 +132,8 @@ window.App = (function () {
     });
     document.querySelector(".logo-btn").addEventListener("click", () => go("home"));
     document.getElementById("lang-switcher").addEventListener("click", () => Views.langPicker());
+    const refreshBtn = document.getElementById("refresh-btn");
+    if (refreshBtn) refreshBtn.addEventListener("click", refreshNow);
 
     // Listen to visibility changes to record session time
     document.addEventListener("visibilitychange", () => {
@@ -150,7 +152,23 @@ window.App = (function () {
     }
   }
 
-  return { init, go, showUnit, startLesson, refreshTopbar, speak, speakSlow, examplesFor, getLangPack, getLangMeta, allCards, cardById };
+  // 更新ボタン: クラウドから取り直し（push もしてから現在ビューを再描画）
+  async function refreshNow() {
+    const btn = document.getElementById("refresh-btn");
+    if (btn) btn.classList.add("spinning");
+    try {
+      if (window.Storage && Storage.reload) Storage.reload();
+      if (window.Sync && Sync.enabled && Sync.enabled()) {
+        try { await Sync.pushNow(); } catch (e) {}
+      }
+      go(currentView);
+      refreshTopbar();
+    } finally {
+      setTimeout(() => { if (btn) btn.classList.remove("spinning"); }, 600);
+    }
+  }
+
+  return { init, go, showUnit, startLesson, refreshTopbar, refreshNow, speak, speakSlow, examplesFor, getLangPack, getLangMeta, allCards, cardById };
 })();
 
 document.addEventListener("DOMContentLoaded", App.init);
