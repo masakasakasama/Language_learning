@@ -1216,6 +1216,32 @@ window.Views = (function () {
     });
     backupRow.appendChild(fileInput);
     backupRow.appendChild(el("button", { class: "btn ghost", text: "📤 Import backup", onclick: () => fileInput.click() }));
+    backupRow.appendChild(el("button", { class: "btn ghost", text: "📋 Paste JSON", onclick: () => {
+      const wrap = el("div", { class: "lang-picker" });
+      wrap.appendChild(el("div", { class: "lang-picker-title", text: "Paste backup JSON" }));
+      wrap.appendChild(el("div", { class: "muted small", style: "line-height:1.5;",
+        text: "復元したい mumu の状態JSONを丸ごとここに貼り付け → Restore で復元。ファイルが消えてしまった時の最後の手段として使えます。" }));
+      const ta = el("textarea", { class: "ex-input", style: "min-height:200px;font-family:monospace;font-size:11px;width:100%;",
+        placeholder: '{ "currentLang": "ja", "languages": { ... }, ... }' });
+      wrap.appendChild(ta);
+      wrap.appendChild(el("button", { class: "btn primary big", text: "Restore", onclick: () => {
+        const text = ta.value.trim();
+        if (!text) { toast("Paste JSON first.", "bad"); return; }
+        const choice = confirm("OK = MERGE (現在のデータと合体)\nCancel = REPLACE (貼り付けたデータで完全上書き)");
+        // Safety backup first
+        try { Storage.downloadBackup(); } catch (e) {}
+        const result = Storage.importData(text, choice);
+        if (result.ok) {
+          toast("Restored ✨", "good");
+          UI.closeModal();
+          App.refreshTopbar();
+          setTimeout(() => App.go("profile"), 400);
+        } else {
+          toast("Failed: " + result.error, "bad");
+        }
+      }}));
+      UI.modal(wrap);
+    }}));
     backup.appendChild(backupRow);
     viewEl.appendChild(backup);
 
