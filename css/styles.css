@@ -795,6 +795,21 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
 .daily-goal-count { font-size: 13px; color: var(--muted); font-family: monospace; }
 .daily-goal-badge { position: absolute; top: 4px; right: 6px; font-size: 14px; }
 
+.integrate-block {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.integrate-block.on  { border-color: var(--good); }
+.integrate-block.off { border-style: dashed; }
+.integrate-block code {
+  background: var(--bg-2); padding: 1px 5px; border-radius: 4px;
+  font-family: monospace; font-size: 11px; word-break: break-all;
+}
+.integrate-title { font-weight: 700; margin-bottom: 4px; }
+
 .settings { display: flex; flex-direction: column; gap: 8px; }
 .storage-info { line-height: 1.6; padding: 10px 14px; }
 .storage-info code { background: var(--bg-2); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 11px; }

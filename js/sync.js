@@ -139,6 +139,31 @@ function mergeStates(local, remote) {
   // notified registry: union (no double-fire across devices)
   out.notified = Object.assign({}, local.notified || {}, remote.notified || {});
 
+  // Daily achievements per (date, language) — union, prefer "achieved=true",
+  // and keep the earliest `at` timestamp.
+  out.dailyAchievements = out.dailyAchievements || {};
+  const la = local.dailyAchievements || {};
+  const ra = remote.dailyAchievements || {};
+  const dates = new Set([...Object.keys(la), ...Object.keys(ra)]);
+  dates.forEach((d) => {
+    const merged = Object.assign({}, la[d] || {});
+    const rday = ra[d] || {};
+    Object.keys(rday).forEach((L) => {
+      const x = merged[L];
+      const y = rday[L];
+      if (!x) merged[L] = y;
+      else {
+        merged[L] = {
+          achieved: !!(x.achieved || y.achieved),
+          cards: Math.max(x.cards || 0, y.cards || 0),
+          goal: y.goal || x.goal,
+          at: (x.at && y.at) ? (x.at < y.at ? x.at : y.at) : (x.at || y.at)
+        };
+      }
+    });
+    out.dailyAchievements[d] = merged;
+  });
+
   out.languages = out.languages || {};
   const langs = new Set([...Object.keys(local.languages||{}), ...Object.keys(remote.languages||{})]);
   langs.forEach((lang) => {

@@ -94,6 +94,44 @@ That's it. **No Anonymous auth, no Google login, no manual paste.** Share the li
 
 Use this if you want strong identity per user. After **Set up sync**, choose **Use Google sign-in instead** and sign in with the same Google account on each device.
 
+### Task-manager auto-sync (no extra setup)
+
+When Cloud Sync is on, mumu auto-publishes daily achievements into the same
+Firestore document it already syncs:
+
+```
+sync/<your-sync-code>/state/main.dailyAchievements = {
+  "2026-05-11": {
+    "ja": { achieved: true, cards: 23, goal: 20, at: "2026-05-11T08:32:00Z" },
+    "ko": { achieved: true, cards: 21, goal: 20, at: "..." },
+    "es": { achieved: false, ... }
+  },
+  "2026-05-10": { ... }
+}
+```
+
+Any other app of yours that shares the same sync code can read this map and
+tick off the matching habit. Example fetch with the Firebase JS SDK:
+
+```js
+const ref = doc(db, "sync", SYNC_CODE, "state", "main");
+const snap = await getDoc(ref);
+const achievements = snap.data().dailyAchievements || {};
+const today = achievements[new Date().toISOString().slice(0, 10)] || {};
+if (today.ja?.achieved) markHabit("日本語", true);
+if (today.ko?.achieved) markHabit("韓国語", true);
+if (today.es?.achieved) markHabit("スペイン語", true);
+```
+
+If you prefer a push model instead, mumu can also POST a JSON payload to any
+webhook URL (Profile → 🛠 Advanced). The payload shape is:
+
+```json
+{ "source": "mumu", "date": "2026-05-11", "language": "ja",
+  "languageName": "Japanese", "cardsToday": 23, "goal": 20,
+  "achieved": true, "version": "1.4.1" }
+```
+
 ### Firestore rules
 
 For sync-code mode (anonymous auth, scoped to `sync/*`):

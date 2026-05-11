@@ -1038,12 +1038,32 @@ window.Views = (function () {
     dailyCard.appendChild(el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
       html: "Tap a language to change its daily goal. <b>20 cards ≈ 3–5 min</b> (faster for MC, slower for typing)." }));
 
+    // Auto-sync explainer (primary path — no setup needed beyond Cloud Sync)
+    const syncOn = window.Sync && window.Sync.isConfigured && window.Sync.isConfigured();
+    const integrate = el("div", { class: "integrate-block " + (syncOn ? "on" : "off") });
+    integrate.appendChild(el("div", { class: "integrate-title", text: "🔗 Task-manager auto-sync" }));
+    integrate.appendChild(el("div", { class: "muted small", style: "line-height:1.5;",
+      html: syncOn
+        ? "Daily achievements are <b>auto-saved</b> to your Cloud Sync code at " +
+          "<code>sync/&lt;your-code&gt;/state/main.dailyAchievements</code>. " +
+          "Any app sharing the same sync code (e.g. your task manager) " +
+          "reads from there — no webhook, no extra setup."
+        : "Set up <b>☁️ Cloud sync</b> below first. Once you have a sync code, " +
+          "daily achievements automatically appear at " +
+          "<code>sync/&lt;your-code&gt;/state/main.dailyAchievements</code>, ready for " +
+          "your task-manager app to read."
+    }));
+    dailyCard.appendChild(integrate);
+
+    // Advanced: outbound webhook (kept for power users who want Zapier / IFTTT etc.)
+    const advanced = el("details", { class: "sync-help" });
+    advanced.appendChild(el("summary", { text: "🛠 Advanced: outbound webhook (optional)" }));
+    advanced.appendChild(el("div", { class: "muted small", style:"line-height:1.5;margin:6px 0;",
+      html: "If you'd rather POST to Zapier / IFTTT / your own endpoint when a goal is hit, paste a URL here." }));
     const hookUrl = Storage.getWebhookUrl();
-    const hookField = el("div", { class: "form-field", style:"margin-top:10px;" });
-    hookField.appendChild(el("label", { class: "form-label", text: "🔗 Webhook for external habit tracker" }));
     const hookInput = el("input", { class: "ex-input", type: "url", placeholder: "https://your-task-manager/api/mumu" });
     hookInput.value = hookUrl;
-    hookField.appendChild(hookInput);
+    advanced.appendChild(hookInput);
     const hookButtons = el("div", { style: "display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;" }, [
       el("button", { class: "btn primary", text: "Save webhook", onclick: () => {
         Storage.setWebhookUrl(hookInput.value.trim());
@@ -1054,18 +1074,16 @@ window.Views = (function () {
         if (!url) { toast("Enter a URL first.", "bad"); return; }
         try {
           await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ source: "mumu", test: true, date: Storage.todayStr(), language: lang, achieved: true })
           });
           toast("Webhook test sent.", "good");
         } catch (e) { toast("Webhook test failed: " + e.message, "bad"); }
       }})
     ]);
-    hookField.appendChild(hookButtons);
-    dailyCard.appendChild(hookField);
-    dailyCard.appendChild(el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
-      html: "When you hit a language's daily goal, mumu POSTs JSON like <code>{source:'mumu', date, language, cardsToday, goal, achieved:true}</code> to this URL. Plug it into Zapier / IFTTT / your task-manager API to auto-check the same habit there." }));
+    advanced.appendChild(hookButtons);
+    dailyCard.appendChild(advanced);
+
     viewEl.appendChild(dailyCard);
 
     // Per-language progress overview (cards seen / mastered)

@@ -355,12 +355,36 @@ window.Storage = (function () {
     save();
   }
 
+  // Auto-recorded daily achievements. Lives at root.dailyAchievements and
+  // rides on the existing Cloud Sync (Firestore) → any other app that shares
+  // the same sync code can read it at sync/{code}/state/main.dailyAchievements.
+  // Schema: { "YYYY-MM-DD": { ja:{achieved,cards,goal,at}, ko:{...}, ... } }
+  function recordDailyAchievementInState(lang) {
+    const root = load();
+    const day = todayStr();
+    root.dailyAchievements = root.dailyAchievements || {};
+    root.dailyAchievements[day] = root.dailyAchievements[day] || {};
+    root.dailyAchievements[day][lang] = {
+      achieved: true,
+      cards: todayCardsForLang(lang),
+      goal: getDailyGoal(lang),
+      at: new Date().toISOString()
+    };
+    save();
+  }
+  function getDailyAchievementsAll() { return load().dailyAchievements || {}; }
+  function getDailyAchievementsForDate(date) {
+    return (load().dailyAchievements || {})[date] || {};
+  }
+
   // Called from recordCard. If the user just crossed today's per-language
-  // goal, fire a CustomEvent and (if configured) POST to the user's webhook.
+  // goal, fire an event and persist the achievement to the state (which
+  // auto-syncs to Firestore via Sync).
   function checkDailyAchievement(lang) {
     if (!isDailyAchieved(lang)) return;
     if (wasNotifiedToday(lang)) return;
     markNotified(lang);
+    recordDailyAchievementInState(lang);
     const payload = {
       source: "mumu",
       date: todayStr(),
@@ -369,20 +393,15 @@ window.Storage = (function () {
       cardsToday: todayCardsForLang(lang),
       goal: getDailyGoal(lang),
       achieved: true,
-      version: "1.4.0"
+      version: "1.4.1"
     };
-    // Fire DOM event so the app can show a toast immediately
     try { window.dispatchEvent(new CustomEvent("mumu:daily-achieved", { detail: payload })); } catch (e) {}
-    // Optional outbound webhook to a Task-Manager / Zapier / IFTTT endpoint
+    // Power-user escape hatch: still POST to a webhook if one is configured.
     const url = getWebhookUrl();
     if (url) {
       try {
-        fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          mode: "cors",
-          body: JSON.stringify(payload)
-        }).catch((e) => console.warn("[mumu] webhook failed", e));
+        fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, mode: "cors", body: JSON.stringify(payload) })
+          .catch((e) => console.warn("[mumu] webhook failed", e));
       } catch (e) { console.warn("[mumu] webhook threw", e); }
     }
   }
@@ -465,6 +484,7 @@ window.Storage = (function () {
     setMark, getMark,
     addCustomCard, getCustomCards, removeCustomCard,
     getDailyGoal, setDailyGoal, todayCardsForLang, isDailyAchieved, dailyAchievementMap,
+    getDailyAchievementsAll, getDailyAchievementsForDate,
     getWebhookUrl, setWebhookUrl, wasNotifiedToday,
     lessonDone, markLessonDone,
     addXP, recordStudyTime, recordCard, recordLesson,
