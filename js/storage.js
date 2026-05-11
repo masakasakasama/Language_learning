@@ -62,9 +62,26 @@ window.Storage = (function () {
     try {
       const raw = localStorage.getItem(KEY);
       cache = raw ? JSON.parse(raw) : defaultRoot();
-      // ensure all language slots exist (in case we add languages later)
+      // Migration / completeness pass for state loaded from older versions.
+      // Fills in fields the user's saved state may not yet have, so toggles
+      // like trackForTaskManager don't silently become false on cards
+      // imported / merged from an earlier schema.
+      cache.languages = cache.languages || {};
       ["ja","ko","en","es"].forEach((l) => {
         if (!cache.languages[l]) cache.languages[l] = defaultLangState();
+        const s = cache.languages[l];
+        if (typeof s.trackForTaskManager !== "boolean") {
+          // ja / ko / es default to linked, en default to unlinked
+          s.trackForTaskManager = (l !== "en");
+        }
+        if (typeof s.dailyGoal !== "number") s.dailyGoal = 20;
+        if (!s.cards) s.cards = {};
+        if (!s.lessonsCompleted) s.lessonsCompleted = {};
+        if (!s.learned) s.learned = {};
+        if (!s.marks) s.marks = {};
+        if (!Array.isArray(s.customCards)) s.customCards = [];
+        if (typeof s.xp !== "number") s.xp = 0;
+        if (typeof s.level !== "number") s.level = 1;
       });
     } catch (e) {
       cache = defaultRoot();
