@@ -329,12 +329,25 @@ function showSyncError(err) {
         "3. ロケーション (asia-northeast1) → 完了<br>" +
         "4. 2-3 分待ってアプリの 🔄 をタップ</span>";
     } else if (/permission|insufficient|denied/i.test(msg)) {
+      // Try to copy the rule to clipboard so the user can paste it immediately
+      try {
+        navigator.clipboard.writeText(
+          "rules_version = '2';\n" +
+          "service cloud.firestore {\n" +
+          "  match /databases/{database}/documents {\n" +
+          "    match /sync/{code}/{document=**} {\n" +
+          "      allow read, write: if true;\n" +
+          "    }\n" +
+          "  }\n" +
+          "}"
+        );
+      } catch (e) {}
       help =
-        "<b>Firestore のセキュリティルールが書き込みを拒否しています。</b><br>" +
-        "<a href='https://console.firebase.google.com/project/language-learning-a740a/firestore/rules' target='_blank' rel='noopener' style='color:#fff;text-decoration:underline;'>" +
-        "ルール画面を開く →</a><br>" +
-        "<span style='font-size:11px;opacity:.9;'>以下を貼って Publish:</span>" +
-        "<code style='display:block;padding:6px;background:rgba(0,0,0,0.25);border-radius:4px;margin-top:4px;font-size:11px;'>" +
+        "<b>Firestore ルールが書き込みを拒否しています。</b><br>" +
+        "<span style='font-size:11px;opacity:.9;'>正しいルールはクリップボードにコピー済み。下のボタンでルール画面を開いて貼り付け→Publish するだけ。</span><br>" +
+        "<button class='sync-error-action' onclick=\"window.open('https://console.firebase.google.com/project/language-learning-a740a/firestore/rules','_blank')\" style='margin-top:6px;'>" +
+          "ルール画面を開く →</button>" +
+        "<code style='display:block;padding:6px;background:rgba(0,0,0,0.25);border-radius:4px;margin-top:6px;font-size:11px;'>" +
           "match /sync/{code}/{document=**} { allow read, write: if true; }" +
         "</code>";
     } else {

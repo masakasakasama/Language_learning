@@ -1216,6 +1216,23 @@ window.Views = (function () {
     });
     backupRow.appendChild(fileInput);
     backupRow.appendChild(el("button", { class: "btn ghost", text: "📤 Import backup", onclick: () => fileInput.click() }));
+    // 🆘 One-tap restore of the 21-card snapshot baked into js/data/last-known.js
+    // (whatever we received in chat while debugging). Always available.
+    if (window.LAST_KNOWN_DATA) {
+      const lk = window.LAST_KNOWN_DATA;
+      let lkCards = 0;
+      Object.values(lk.languages || {}).forEach((s) => { lkCards += Object.keys(s.cards || {}).length; });
+      backupRow.appendChild(el("button", { class: "btn warn", text: "🆘 Restore last-known (" + lkCards + " cards)", onclick: () => {
+        if (!confirm("Restore the last data we have on record (" + lkCards + " cards from " + (lk.streak?.lastActiveDate || "earlier") + ")?\n\nOK = MERGE with current data (safe)\nCancel here keeps things as is.")) return;
+        try { Storage.downloadBackup(); } catch (e) {}
+        const r = Storage.importData(JSON.stringify(lk), /* merge */ true);
+        if (r.ok) {
+          toast("Restored " + lkCards + " cards ✨", "good");
+          App.refreshTopbar();
+          setTimeout(() => App.go("profile"), 300);
+        } else { toast("Failed: " + r.error, "bad"); }
+      }}));
+    }
     backupRow.appendChild(el("button", { class: "btn ghost", text: "📋 Paste JSON", onclick: () => {
       const wrap = el("div", { class: "lang-picker" });
       wrap.appendChild(el("div", { class: "lang-picker-title", text: "Paste backup JSON" }));

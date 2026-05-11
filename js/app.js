@@ -154,6 +154,65 @@ window.App = (function () {
     } else {
       go("home");
     }
+    // Data-loss watchdog: if a snapshot has noticeably more cards than current
+    // local state, offer to restore automatically.
+    setTimeout(detectDataLoss, 800);
+  }
+
+  // Compare current state with the largest snapshot. If current is empty (or
+  // much smaller) and there's a richer snapshot, prompt the user to recover.
+  function detectDataLoss() {
+    try {
+      const snaps = (Storage.getSnapshots && Storage.getSnapshots()) || [];
+      const root = Storage.load();
+      const currentCards = Storage.countCards ? Storage.countCards(root) : 0;
+      // Find the biggest snapshot
+      let best = null;
+      snaps.forEach((s) => { if (!best || (s.cardCount || 0) > (best.cardCount || 0)) best = s; });
+      // Also consider the baked LAST_KNOWN data as a fallback offer
+      let lastKnownCards = 0;
+      if (window.LAST_KNOWN_DATA) {
+        Object.values(window.LAST_KNOWN_DATA.languages || {}).forEach((s) => {
+          lastKnownCards += Object.keys((s && s.cards) || {}).length;
+        });
+      }
+      const hasBigSnap = best && (best.cardCount || 0) > currentCards + 2;
+      const hasBigLastKnown = lastKnownCards > currentCards + 2;
+      if (!hasBigSnap && !hasBigLastKnown) return;
+      // Don't spam: remember we offered recovery this session
+      if (window.__mumuRecoveryOffered) return;
+      window.__mumuRecoveryOffered = true;
+      // Build a modal
+      const { el } = UI;
+      const wrap = el("div", { class: "lang-picker" });
+      wrap.appendChild(el("div", { class: "lang-picker-title", text: "🛟 Data recovery" }));
+      wrap.appendChild(el("div", { class: "muted small", style:"line-height:1.5;",
+        html: "Current state has <b>" + currentCards + "</b> cards. We found older state with more data — restore it?" }));
+      if (hasBigSnap) {
+        wrap.appendChild(el("button", { class: "btn primary big", text:
+          "Restore snapshot (" + best.cardCount + " cards, " + new Date(best.at).toLocaleString() + ")", onclick: () => {
+            const idx = snaps.indexOf(best);
+            Storage.restoreSnapshot(idx);
+            UI.closeModal();
+            UI.toast("Restored ✨", "good");
+            refreshTopbar();
+            go("home");
+        }}));
+      }
+      if (hasBigLastKnown) {
+        wrap.appendChild(el("button", { class: "btn warn big", style:"margin-top:8px;", text:
+          "Restore last-known data (" + lastKnownCards + " cards, baked in)", onclick: () => {
+            try { Storage.downloadBackup(); } catch (e) {}
+            Storage.importData(JSON.stringify(window.LAST_KNOWN_DATA), /* merge */ true);
+            UI.closeModal();
+            UI.toast("Restored " + lastKnownCards + " cards ✨", "good");
+            refreshTopbar();
+            go("home");
+        }}));
+      }
+      wrap.appendChild(el("button", { class: "btn ghost", style:"margin-top:8px;", text: "Skip", onclick: () => UI.closeModal() }));
+      UI.modal(wrap);
+    } catch (e) { console.warn("[mumu] data-loss detection failed", e); }
   }
 
   // 更新ボタン: クラウドから取り直し（push もしてから現在ビューを再描画）
