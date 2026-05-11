@@ -751,6 +751,8 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
   margin: 8px 0;
 }
 .sync-code-wrap { background: var(--surface-2); padding: 12px; border-radius: 14px; }
+.sync-join-wrap { background: var(--surface); padding: 12px; border-radius: 14px; border: 1px dashed var(--border); margin-top: 10px; }
+.sync-join-wrap .ex-input { font-family: monospace; text-transform: uppercase; letter-spacing: 1px; text-align: center; flex: 1; }
 .sync-code {
   font-family: monospace;
   font-size: 18px;

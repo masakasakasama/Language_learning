@@ -1213,21 +1213,20 @@ window.Views = (function () {
     card.appendChild(el("div", { class: "card-row" }, [
       el("div", {}, [
         el("div", { text: "☁️ Cloud sync", style: "font-weight:700;" }),
-        el("div", { class: "muted small", text: "Sync your progress across phone & desktop" })
+        el("div", { class: "muted small", text: "Share progress with your other device" })
       ]),
       el("div", { class: "sync-status", id: "sync-status-pill" })
     ]));
     refreshSyncPill();
 
+    // (Legacy escape hatch: no firebase config saved → fall back to old setup.
+    // Default is hardcoded so this branch normally never triggers.)
     if (!window.Sync || !window.Sync.isConfigured()) {
       const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
         el("button", { class: "btn primary", text: "Set up sync", onclick: showSyncSetup }),
         el("button", { class: "btn ghost", text: "I have a code", onclick: showJoinByCode })
       ]);
       card.appendChild(row);
-      const help = el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
-        html: "Free with your own Firebase project. After setup, just copy a sync code into your other device — no Google login required." });
-      card.appendChild(help);
       return card;
     }
 
@@ -1236,25 +1235,61 @@ window.Views = (function () {
     if (mode === "code") {
       const code = window.Sync.getCode();
       const joinLink = window.Sync.buildJoinLink();
+
+      // ① This device's sync code, prominently displayed.
       const codeWrap = el("div", { class: "sync-code-wrap" });
-      codeWrap.appendChild(el("div", { class: "muted small", text: "Send this link to your other device — opening it auto-syncs, no setup needed." }));
-      codeWrap.appendChild(el("div", { class: "sync-code", text: shortenLink(joinLink) }));
-      codeWrap.appendChild(el("div", { class: "muted small", style:"margin-top:6px;", text: "Sync code: " + (code || "—") }));
-      const buttons = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;" }, [
-        el("button", { class: "btn primary", text: "📋 Copy join link", onclick: async () => {
+      codeWrap.appendChild(el("div", { class: "muted small", text: "This device's sync code (share with your partner):" }));
+      codeWrap.appendChild(el("div", { class: "sync-code", text: code || "—" }));
+      const shareRow = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;" }, [
+        el("button", { class: "btn primary", text: "📋 Copy link", onclick: async () => {
           if (!joinLink) return;
-          try { await navigator.clipboard.writeText(joinLink); toast("Link copied! Send it to your other device.", "good"); }
+          try { await navigator.clipboard.writeText(joinLink); toast("Link copied!", "good"); }
           catch (e) { toast("Copy failed — long-press to copy.", "bad"); }
         }}),
-        el("button", { class: "btn ghost", text: "📱 Show QR", onclick: () => showQR(joinLink) }),
-        navigator.share ? el("button", { class: "btn ghost", text: "↗ Share…", onclick: async () => {
-          try { await navigator.share({ title: "mumu sync", text: "Open this on mumu to sync our progress", url: joinLink }); }
-          catch (e) {/* user cancelled */}
-        }}) : null,
-        el("button", { class: "btn ghost", text: "Force sync", onclick: () => window.Sync.pushNow() })
+        el("button", { class: "btn ghost", text: "📱 QR", onclick: () => showQR(joinLink) }),
+        navigator.share ? el("button", { class: "btn ghost", text: "↗ Share", onclick: async () => {
+          try { await navigator.share({ title: "mumu sync", text: "mumuで一緒に同期しよう", url: joinLink }); }
+          catch (e) {}
+        }}) : null
       ]);
+      codeWrap.appendChild(shareRow);
       card.appendChild(codeWrap);
-      card.appendChild(buttons);
+
+      // ② Join someone else's code (the partner's device path).
+      const join = el("div", { class: "sync-join-wrap" });
+      join.appendChild(el("div", { class: "muted small", text: "Joining your partner's progress? Paste their code:" }));
+      const joinInput = el("input", { class: "ex-input", type: "text",
+        placeholder: "ABCD-EFGH-IJKL-MNOP", autocomplete: "off", autocapitalize: "characters" });
+      const joinBtn = el("button", { class: "btn primary", text: "Join", onclick: () => {
+        const raw = joinInput.value.trim();
+        if (!raw) return;
+        // Automatic safety backup before overwriting local with the new code's data
+        try { Storage.downloadBackup(); toast("Backup downloaded first (just in case).", "good"); } catch (e) {}
+        try {
+          const formatted = window.Sync.joinByCode(raw);
+          toast("Joined " + formatted + " — syncing…", "good");
+          setTimeout(() => App.go("profile"), 600);
+        } catch (e) { toast("Couldn't join: " + e.message, "bad"); }
+      }});
+      const joinRow = el("div", { style:"display:flex;gap:8px;margin-top:6px;" }, [joinInput, joinBtn]);
+      join.appendChild(joinRow);
+      card.appendChild(join);
+
+      // ③ Safety / power-user controls
+      const power = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;" }, [
+        el("button", { class: "btn ghost", text: "⬆ Push my data", title: "Overwrite the cloud with this device's data", onclick: async () => {
+          if (!confirm("Push this device's data to the cloud? (Overwrites whatever is up there.)")) return;
+          try { await window.Sync.forcePush(); toast("Pushed.", "good"); }
+          catch (e) { toast("Push failed: " + e.message, "bad"); }
+        }}),
+        el("button", { class: "btn ghost", text: "⬇ Pull from cloud", title: "Replace this device's data with what's in the cloud", onclick: async () => {
+          if (!confirm("Replace this device's data with the cloud version? (We'll save a backup file first.)")) return;
+          try { Storage.downloadBackup(); } catch (e) {}
+          try { await window.Sync.forcePull(); toast("Pulled.", "good"); App.refreshTopbar(); App.go("profile"); }
+          catch (e) { toast("Pull failed: " + e.message, "bad"); }
+        }})
+      ]);
+      card.appendChild(power);
     } else {
       // user mode (Google)
       const user = window.Sync.user();

@@ -25,13 +25,33 @@ const CODE_KEY   = "mochi.firebase.syncCode";
 const MODE_KEY   = "mochi.firebase.syncMode";   // "code" | "user"
 const STATE_KEY  = "mochi.v1";
 
+// Firebase config baked into the app so the partner device doesn't have to
+// paste anything. The Web API key is public on Firebase by design (security
+// lives in Firestore rules + the random sync code).
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCIezNBc2VaPgt3aYcMo2e3gIUpzlJB_5w",
+  authDomain: "language-learning-a740a.firebaseapp.com",
+  projectId: "language-learning-a740a",
+  storageBucket: "language-learning-a740a.firebasestorage.app",
+  messagingSenderId: "388233596942",
+  appId: "1:388233596942:web:3edeecfb8da8160955ac5f"
+};
+
 let app = null, auth = null, db = null, unsub = null, currentUser = null;
 let syncEnabled = false, applyingRemote = false;
 let lastPushAt = 0;
 const writeDebounceMs = 1500;
 let pushTimer = null;
 
-const getCfg  = () => { try { return JSON.parse(localStorage.getItem(CFG_KEY) || "null"); } catch (e) { return null; } };
+function getCfg() {
+  // Prefer a saved user-overridden config (legacy), otherwise fall back to the
+  // baked-in default so sync just works on a fresh device.
+  try {
+    const stored = JSON.parse(localStorage.getItem(CFG_KEY) || "null");
+    if (stored && stored.apiKey) return stored;
+  } catch (e) {}
+  return DEFAULT_FIREBASE_CONFIG;
+}
 const setCfg  = (c) => localStorage.setItem(CFG_KEY, JSON.stringify(c));
 const getCode = () => localStorage.getItem(CODE_KEY) || null;
 const setCode = (c) => localStorage.setItem(CODE_KEY, c);
@@ -426,15 +446,53 @@ window.addEventListener("mochi:local-changed", () => {
 window.addEventListener("DOMContentLoaded", async () => {
   const joined = await tryAutoJoinFromURL();
   if (joined) return; // tryAutoJoinFromURL already initialized Firebase
-  if (getCfg()) {
-    ensureFirebaseInit();
-    setStatus("connecting");
-  } else {
-    setStatus("disabled");
+  // Firebase config is baked in — always available. Auto-generate a sync code
+  // on the very first launch so the device is immediately ready to share or
+  // be joined.
+  setMode("code");
+  if (!getCode()) {
+    setCode(genCode());
   }
+  ensureFirebaseInit();
+  setStatus("connecting");
 });
 
+// Replace the device's current sync code with one provided by a partner.
+// Returns the cleaned code.
+function joinByCode(rawCode) {
+  if (!rawCode) throw new Error("Empty code");
+  // Normalise: uppercase, strip spaces and add hyphens every 4 chars
+  let cleaned = rawCode.toString().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (cleaned.length < 12) throw new Error("Code is too short");
+  cleaned = cleaned.slice(0, 16);
+  const formatted = (cleaned.match(/.{1,4}/g) || []).join("-");
+  setMode("code");
+  setCode(formatted);
+  // Refresh listener with the new code
+  if (unsub) { unsub(); unsub = null; }
+  syncEnabled = true;
+  startListening();
+  setStatus("connecting");
+  window.dispatchEvent(new CustomEvent("mumu:joined-via-link"));
+  return formatted;
+}
+
 // Public API
+// Force-push current local state (overwrites cloud).
+async function forcePush() {
+  return pushNow();
+}
+// Force-pull cloud state (overwrites local). Used as an escape hatch.
+async function forcePull() {
+  const ref = docRef(); if (!ref) throw new Error("Not connected");
+  const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js");
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("No data in the cloud for this code yet.");
+  applyingRemote = true;
+  setLocalState(snap.data());
+  applyingRemote = false;
+}
+
 window.Sync = {
   isConfigured: () => !!getCfg(),
   getConfig: getCfg,
@@ -446,6 +504,9 @@ window.Sync = {
   setupUserMode,
   setupFromSharePayload,
   buildJoinLink,
+  joinByCode,
+  forcePush,
+  forcePull,
   signInGoogle,
   signInAnon,
   signOut: doSignOut,
