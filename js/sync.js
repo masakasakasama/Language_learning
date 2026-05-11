@@ -43,8 +43,10 @@ const SHARED_SYNC_CODE = "mumu-household-2026";
 let app = null, auth = null, db = null, unsub = null, currentUser = null;
 let syncEnabled = false, applyingRemote = false;
 let lastPushAt = 0;
-const writeDebounceMs = 1500;
+const writeDebounceMs = 300;   // near-real-time
 let pushTimer = null;
+let pushRetryAttempt = 0;
+let permanentErrorShown = false;
 
 function getCfg() {
   // Prefer a saved user-overridden config (legacy), otherwise fall back to the
@@ -274,11 +276,43 @@ async function pushNow() {
   try {
     await setDoc(ref, state, { merge: false });
     lastPushAt = Date.now();
+    pushRetryAttempt = 0;
+    if (permanentErrorShown) {
+      // Recovered — clear the persistent error banner
+      try { document.querySelectorAll(".sync-error-banner").forEach((n) => n.remove()); } catch (e) {}
+      permanentErrorShown = false;
+    }
     setStatus("synced");
   } catch (e) {
     console.warn("[sync] push failed", e);
     setStatus("error", e.message);
+    showSyncError(e);
+    // Auto-retry with exponential backoff (1s, 2s, 4s, 8s, capped 30s)
+    pushRetryAttempt = Math.min(pushRetryAttempt + 1, 5);
+    const delay = Math.min(30000, 1000 * Math.pow(2, pushRetryAttempt - 1));
+    setTimeout(pushNow, delay);
   }
+}
+
+// Show a persistent on-screen banner with the sync error message so the
+// user actually sees that something went wrong (instead of silently failing
+// in the console). Most common cause is Firestore rules denying access.
+function showSyncError(err) {
+  if (permanentErrorShown) return;
+  permanentErrorShown = true;
+  try {
+    const banner = document.createElement("div");
+    banner.className = "sync-error-banner";
+    banner.innerHTML =
+      "⚠️ クラウド同期に失敗しています: <b>" + (err && err.message || err) + "</b><br>" +
+      "<span style='font-size:11px;opacity:.85;'>Firebase Console → Firestore → Rules で以下のルールが必要です（コピペしてPublish）:</span><br>" +
+      "<code style='display:block;padding:6px;background:rgba(0,0,0,0.25);border-radius:4px;margin-top:4px;font-size:11px;'>" +
+        "match /sync/{code}/{document=**} { allow read, write: if true; }" +
+      "</code>" +
+      "<button class='sync-error-close' style='margin-top:6px;'>閉じる</button>";
+    document.body.appendChild(banner);
+    banner.querySelector(".sync-error-close").onclick = () => banner.remove();
+  } catch (e) {}
 }
 
 function schedulePush() {
@@ -292,6 +326,13 @@ function startListening() {
   if (unsub) { unsub(); unsub = null; }
   const ref = docRef();
   if (!ref) return;
+  // Kick off an immediate push so the cloud always has at least the local
+  // state from "right now", even before any user action. This is what makes
+  // a freshly opened device merge with the other device in real time.
+  try {
+    const local = getLocalState();
+    if (local && local.languages) pushNow();
+  } catch (e) {}
   unsub = onSnapshot(ref, (snap) => {
     if (!snap.exists()) {
       // First time on this code — push current local up

@@ -1280,29 +1280,13 @@ window.Views = (function () {
     // Configured
     const mode = window.Sync.getMode();
     if (mode === "code") {
-      // The sync code is now shared across every device that opens this
-      // URL — no copy/paste, no QR, no joining required. The UI is just
-      // a status line plus safety controls.
+      // Sync is fully automatic — no buttons, no setup. UI is purely
+      // informational so the user can confirm it's working.
       const intro = el("div", { class: "sync-code-wrap" });
       intro.appendChild(el("div", { style: "font-weight:700;font-size:15px;", text: "✓ Auto-syncing across devices" }));
       intro.appendChild(el("div", { class: "muted small", style:"margin-top:4px;line-height:1.5;",
-        html: "Anyone who opens this URL is on the same shared progress. No codes to enter, no setup. The URL itself is the shared key — keep it private." }));
+        html: "Everyone on this URL automatically sees the same progress in real time. No buttons, no setup." }));
       card.appendChild(intro);
-
-      const power = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;" }, [
-        el("button", { class: "btn ghost", text: "⬆ Push my data", title: "Overwrite the cloud with this device's data", onclick: async () => {
-          if (!confirm("Push this device's data to the cloud? (Overwrites whatever is up there.)")) return;
-          try { await window.Sync.forcePush(); toast("Pushed.", "good"); }
-          catch (e) { toast("Push failed: " + e.message, "bad"); }
-        }}),
-        el("button", { class: "btn ghost", text: "⬇ Pull from cloud", title: "Replace this device's data with what's in the cloud", onclick: async () => {
-          if (!confirm("Replace this device's data with the cloud version? (We'll save a backup file first.)")) return;
-          try { Storage.downloadBackup(); } catch (e) {}
-          try { await window.Sync.forcePull(); toast("Pulled.", "good"); App.refreshTopbar(); App.go("profile"); }
-          catch (e) { toast("Pull failed: " + e.message, "bad"); }
-        }})
-      ]);
-      card.appendChild(power);
     } else {
       // user mode (Google)
       const user = window.Sync.user();
