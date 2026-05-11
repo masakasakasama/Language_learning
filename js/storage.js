@@ -23,9 +23,10 @@ window.Storage = (function () {
       cards: {},
       lessonsCompleted: {},
       learned: {},
-      marks: {},   // self-assessment: cardId → "know" | "ok" | "dontknow"
+      marks: {},
       xp: 0,
-      level: 1
+      level: 1,
+      dailyGoal: 20  // cards/day target for THIS language
     };
   }
 
@@ -290,14 +291,100 @@ window.Storage = (function () {
     save();
   }
 
-  function recordCard(correct, xp) {
+  function recordCard(correct, xp, lang) {
     const root = load();
     const day = todayStr();
-    if (!root.stats.byDate[day]) root.stats.byDate[day] = { mins: 0, cards: 0, correct: 0, lessons: 0, xp: 0 };
-    root.stats.byDate[day].cards += 1;
-    if (correct) root.stats.byDate[day].correct += 1;
-    if (xp) root.stats.byDate[day].xp += xp;
+    const L = lang || getLang();
+    if (!root.stats.byDate[day]) root.stats.byDate[day] = { mins: 0, cards: 0, correct: 0, lessons: 0, xp: 0, byLang: {} };
+    const today = root.stats.byDate[day];
+    today.cards += 1;
+    if (correct) today.correct += 1;
+    if (xp) today.xp += xp;
+    // per-language tally so external apps can ask "did the user hit the
+    // Japanese daily goal today?"
+    today.byLang = today.byLang || {};
+    today.byLang[L] = today.byLang[L] || { cards: 0, correct: 0, xp: 0 };
+    today.byLang[L].cards += 1;
+    if (correct) today.byLang[L].correct += 1;
+    if (xp) today.byLang[L].xp += xp;
     save();
+    checkDailyAchievement(L);
+  }
+
+  // ─────────────── Daily achievement (per language) ───────────────
+  function getDailyGoal(lang) { return (langState(lang).dailyGoal ?? 20); }
+  function setDailyGoal(lang, n) { langState(lang).dailyGoal = Math.max(1, n|0); save(); }
+  function todayCardsForLang(lang) {
+    const root = load();
+    const today = root.stats.byDate[todayStr()];
+    return today?.byLang?.[lang]?.cards || 0;
+  }
+  function isDailyAchieved(lang) {
+    return todayCardsForLang(lang) >= getDailyGoal(lang);
+  }
+  function dailyAchievementMap() {
+    const out = {};
+    ["ja","ko","en","es"].forEach((l) => {
+      out[l] = {
+        cards: todayCardsForLang(l),
+        goal: getDailyGoal(l),
+        achieved: isDailyAchieved(l)
+      };
+    });
+    return out;
+  }
+
+  // Track which (date, language) tuples have already triggered today's
+  // notification so we don't fire the webhook twice.
+  function wasNotifiedToday(lang) {
+    const root = load();
+    return !!(root.notified || {})[todayStr() + ":" + lang];
+  }
+  function markNotified(lang) {
+    const root = load();
+    root.notified = root.notified || {};
+    root.notified[todayStr() + ":" + lang] = true;
+    save();
+  }
+
+  function getWebhookUrl() { return load().webhookUrl || ""; }
+  function setWebhookUrl(url) {
+    const root = load();
+    if (url) root.webhookUrl = url;
+    else delete root.webhookUrl;
+    save();
+  }
+
+  // Called from recordCard. If the user just crossed today's per-language
+  // goal, fire a CustomEvent and (if configured) POST to the user's webhook.
+  function checkDailyAchievement(lang) {
+    if (!isDailyAchieved(lang)) return;
+    if (wasNotifiedToday(lang)) return;
+    markNotified(lang);
+    const payload = {
+      source: "mumu",
+      date: todayStr(),
+      language: lang,
+      languageName: ({ja:"Japanese",ko:"Korean",en:"English",es:"Spanish"})[lang] || lang,
+      cardsToday: todayCardsForLang(lang),
+      goal: getDailyGoal(lang),
+      achieved: true,
+      version: "1.4.0"
+    };
+    // Fire DOM event so the app can show a toast immediately
+    try { window.dispatchEvent(new CustomEvent("mumu:daily-achieved", { detail: payload })); } catch (e) {}
+    // Optional outbound webhook to a Task-Manager / Zapier / IFTTT endpoint
+    const url = getWebhookUrl();
+    if (url) {
+      try {
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          mode: "cors",
+          body: JSON.stringify(payload)
+        }).catch((e) => console.warn("[mumu] webhook failed", e));
+      } catch (e) { console.warn("[mumu] webhook threw", e); }
+    }
   }
 
   function recordLesson(xp) {
@@ -377,6 +464,8 @@ window.Storage = (function () {
     isLearned, markLearned, learnedSet, forgetCard, cardStatus,
     setMark, getMark,
     addCustomCard, getCustomCards, removeCustomCard,
+    getDailyGoal, setDailyGoal, todayCardsForLang, isDailyAchieved, dailyAchievementMap,
+    getWebhookUrl, setWebhookUrl, wasNotifiedToday,
     lessonDone, markLessonDone,
     addXP, recordStudyTime, recordCard, recordLesson,
     bumpStreak, getStats, getStreak, getXPTotal,

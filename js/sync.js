@@ -110,16 +110,34 @@ function mergeStates(local, remote) {
   out.stats = out.stats || { byDate: {} };
   const rstats = (remote.stats && remote.stats.byDate) || {};
   Object.keys(rstats).forEach((d) => {
-    const a = out.stats.byDate[d] || { mins:0, cards:0, correct:0, lessons:0, xp:0 };
+    const a = out.stats.byDate[d] || { mins:0, cards:0, correct:0, lessons:0, xp:0, byLang: {} };
     const b = rstats[d];
-    out.stats.byDate[d] = {
+    const merged = {
       mins: Math.max(a.mins||0, b.mins||0),
       cards: Math.max(a.cards||0, b.cards||0),
       correct: Math.max(a.correct||0, b.correct||0),
       lessons: Math.max(a.lessons||0, b.lessons||0),
-      xp: Math.max(a.xp||0, b.xp||0)
+      xp: Math.max(a.xp||0, b.xp||0),
+      byLang: Object.assign({}, a.byLang || {})
     };
+    const bLang = (b.byLang) || {};
+    Object.keys(bLang).forEach((L) => {
+      const x = merged.byLang[L] || { cards:0, correct:0, xp:0 };
+      const y = bLang[L] || {};
+      merged.byLang[L] = {
+        cards: Math.max(x.cards||0, y.cards||0),
+        correct: Math.max(x.correct||0, y.correct||0),
+        xp: Math.max(x.xp||0, y.xp||0)
+      };
+    });
+    out.stats.byDate[d] = merged;
   });
+  // Webhook URL is a global user-level setting → take latest writer
+  if (remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt)) {
+    if (remote.webhookUrl) out.webhookUrl = remote.webhookUrl;
+  }
+  // notified registry: union (no double-fire across devices)
+  out.notified = Object.assign({}, local.notified || {}, remote.notified || {});
 
   out.languages = out.languages || {};
   const langs = new Set([...Object.keys(local.languages||{}), ...Object.keys(remote.languages||{})]);
@@ -160,6 +178,14 @@ function mergeStates(local, remote) {
 
     merged.xp = Math.max(a.xp || 0, b.xp || 0);
     merged.level = Math.max(a.level || 1, b.level || 1);
+    // Daily goal: take the latest-modified side (use parent writeAt)
+    if (typeof b.dailyGoal === "number") {
+      if (typeof a.dailyGoal !== "number" || (remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt))) {
+        merged.dailyGoal = b.dailyGoal;
+      } else {
+        merged.dailyGoal = a.dailyGoal;
+      }
+    }
 
     // Custom cards: union by id (so user's hand-added words sync across devices)
     const customA = a.customCards || [];

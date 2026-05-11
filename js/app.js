@@ -113,6 +113,11 @@ window.App = (function () {
     window.addEventListener("mochi:sync-status", () => {
       if (typeof Views.refreshSyncPill === "function") Views.refreshSyncPill();
     });
+    window.addEventListener("mumu:daily-achieved", (e) => {
+      const d = e.detail || {};
+      UI.confetti();
+      UI.toast(`✨ ${d.languageName} の今日の目標達成！(${d.cardsToday}/${d.goal})`, "good");
+    });
     window.addEventListener("mochi:joined-via-link", () => {
       Storage.reload();
       // If a modal is open (e.g. onboarding), close it

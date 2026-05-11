@@ -355,14 +355,14 @@ window.Views = (function () {
         correctCount += 1;
         const xp = xpOverride != null ? xpOverride : 5;
         Storage.addXP(xp, lang);
-        Storage.recordCard(true, xp);
+        Storage.recordCard(true, xp, lang);
         if (card) {
           const old = Storage.getCard(card.id, lang);
           const ns = SRS.review(old, "good");
           Storage.setCard(card.id, ns, lang);
         }
       } else {
-        Storage.recordCard(false, 0);
+        Storage.recordCard(false, 0, lang);
         if (card) {
           const old = Storage.getCard(card.id, lang);
           const ns = SRS.review(old, "again");
@@ -461,7 +461,7 @@ window.Views = (function () {
         const old = Storage.getCard(card.id, lang);
         const ns = SRS.review(old, ok ? "good" : "again");
         Storage.setCard(card.id, ns, lang);
-        Storage.recordCard(ok, ok ? 5 : 0);
+        Storage.recordCard(ok, ok ? 5 : 0, lang);
         if (ok) correct += 1;
         App.refreshTopbar();
         setTimeout(next, 80);
@@ -1012,6 +1012,61 @@ window.Views = (function () {
     cumGrid.appendChild(statBlock("Longest streak", streak.longest + " 🔥"));
     cumCard.appendChild(cumGrid);
     viewEl.appendChild(cumCard);
+
+    // Today's per-language daily-goal achievements — picked up by external
+    // habit-tracker apps via webhook or by polling localStorage.
+    const dailyCard = el("div", { class: "card stat-cum" });
+    dailyCard.appendChild(el("div", { class: "muted", text: "Today's daily goal — by language" }));
+    const dailyMap = Storage.dailyAchievementMap();
+    const dailyGrid = el("div", { class: "daily-goal-grid" });
+    Object.keys(dailyMap).forEach((l) => {
+      const meta2 = getLangMeta(l);
+      const d = dailyMap[l];
+      const item = el("div", { class: "daily-goal-item " + (d.achieved ? "achieved" : "") });
+      item.appendChild(el("div", { class: "daily-goal-flag", text: meta2.flag }));
+      item.appendChild(el("div", { class: "daily-goal-name", text: meta2.nativeName }));
+      item.appendChild(el("div", { class: "daily-goal-count", text: `${d.cards}/${d.goal}` }));
+      item.appendChild(el("div", { class: "daily-goal-badge", text: d.achieved ? "✅" : "" }));
+      item.onclick = () => {
+        const n = prompt(meta2.nativeName + " の1日の目標カード数:", String(d.goal));
+        const v = parseInt(n, 10);
+        if (Number.isFinite(v) && v > 0) { Storage.setDailyGoal(l, v); App.go("profile"); }
+      };
+      dailyGrid.appendChild(item);
+    });
+    dailyCard.appendChild(dailyGrid);
+    dailyCard.appendChild(el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
+      html: "Tap a language to change its daily goal. <b>20 cards ≈ 3–5 min</b> (faster for MC, slower for typing)." }));
+
+    const hookUrl = Storage.getWebhookUrl();
+    const hookField = el("div", { class: "form-field", style:"margin-top:10px;" });
+    hookField.appendChild(el("label", { class: "form-label", text: "🔗 Webhook for external habit tracker" }));
+    const hookInput = el("input", { class: "ex-input", type: "url", placeholder: "https://your-task-manager/api/mumu" });
+    hookInput.value = hookUrl;
+    hookField.appendChild(hookInput);
+    const hookButtons = el("div", { style: "display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;" }, [
+      el("button", { class: "btn primary", text: "Save webhook", onclick: () => {
+        Storage.setWebhookUrl(hookInput.value.trim());
+        toast(hookInput.value.trim() ? "Webhook saved." : "Webhook cleared.", "good");
+      }}),
+      el("button", { class: "btn ghost", text: "Test fire", onclick: async () => {
+        const url = hookInput.value.trim();
+        if (!url) { toast("Enter a URL first.", "bad"); return; }
+        try {
+          await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ source: "mumu", test: true, date: Storage.todayStr(), language: lang, achieved: true })
+          });
+          toast("Webhook test sent.", "good");
+        } catch (e) { toast("Webhook test failed: " + e.message, "bad"); }
+      }})
+    ]);
+    hookField.appendChild(hookButtons);
+    dailyCard.appendChild(hookField);
+    dailyCard.appendChild(el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
+      html: "When you hit a language's daily goal, mumu POSTs JSON like <code>{source:'mumu', date, language, cardsToday, goal, achieved:true}</code> to this URL. Plug it into Zapier / IFTTT / your task-manager API to auto-check the same habit there." }));
+    viewEl.appendChild(dailyCard);
 
     // Per-language progress overview (cards seen / mastered)
     const allCards = App.allCards(lang);

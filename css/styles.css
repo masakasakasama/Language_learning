@@ -765,6 +765,36 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
   border: 1px dashed var(--border);
 }
 
+.daily-goal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.daily-goal-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 6px;
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+  transition: transform 0.1s, border-color 0.2s, background 0.2s;
+}
+.daily-goal-item:active { transform: scale(0.97); }
+.daily-goal-item.achieved {
+  border-color: var(--good);
+  background: linear-gradient(180deg, rgba(95,184,107,0.18), var(--surface-2));
+}
+.daily-goal-flag { font-size: 24px; }
+.daily-goal-name { font-size: 12px; font-weight: 700; }
+.daily-goal-count { font-size: 13px; color: var(--muted); font-family: monospace; }
+.daily-goal-badge { position: absolute; top: 4px; right: 6px; font-size: 14px; }
+
 .settings { display: flex; flex-direction: column; gap: 8px; }
 .storage-info { line-height: 1.6; padding: 10px 14px; }
 .storage-info code { background: var(--bg-2); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 11px; }
