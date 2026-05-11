@@ -17,7 +17,7 @@ import {
   signInAnonymously, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, doc, setDoc, getDoc, onSnapshot
+  getFirestore, doc, setDoc, getDoc, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const CFG_KEY    = "mochi.firebase.config";
@@ -267,18 +267,33 @@ function docRef() {
 }
 
 // ─────────────── Push / Pull ───────────────
+// Push is non-destructive: we read the cloud doc inside a transaction,
+// merge with the local state, and write the result back. This way two
+// devices that both opened the app independently still end up with the
+// union of their data — neither can silently overwrite the other.
 async function pushNow() {
   if (!syncEnabled || applyingRemote) return;
   const ref = docRef();
   if (!ref) return;
-  const state = getLocalState();
-  state.writeAt = Date.now();
   try {
-    await setDoc(ref, state, { merge: false });
+    await runTransaction(db, async (txn) => {
+      const snap = await txn.get(ref);
+      const remote = snap.exists() ? snap.data() : null;
+      const local = getLocalState();
+      const merged = remote ? mergeStates(local, remote) : local;
+      merged.writeAt = Date.now();
+      txn.set(ref, merged);
+      // If the merge added anything from the cloud, apply it back to local
+      // immediately so this device also reflects the union.
+      if (remote && JSON.stringify(merged) !== JSON.stringify(local)) {
+        applyingRemote = true;
+        setLocalState(merged);
+        applyingRemote = false;
+      }
+    });
     lastPushAt = Date.now();
     pushRetryAttempt = 0;
     if (permanentErrorShown) {
-      // Recovered — clear the persistent error banner
       try { document.querySelectorAll(".sync-error-banner").forEach((n) => n.remove()); } catch (e) {}
       permanentErrorShown = false;
     }
@@ -287,7 +302,6 @@ async function pushNow() {
     console.warn("[sync] push failed", e);
     setStatus("error", e.message);
     showSyncError(e);
-    // Auto-retry with exponential backoff (1s, 2s, 4s, 8s, capped 30s)
     pushRetryAttempt = Math.min(pushRetryAttempt + 1, 5);
     const delay = Math.min(30000, 1000 * Math.pow(2, pushRetryAttempt - 1));
     setTimeout(pushNow, delay);
@@ -346,10 +360,15 @@ function startListening() {
     //   recover if the remote turns out to be empty/wrong.
     try { if (window.Storage && window.Storage.saveSnapshot) window.Storage.saveSnapshot("pre-sync-merge"); } catch (e) {}
     const merged = mergeStates(local, remote);
+    const localChanged = JSON.stringify(merged) !== JSON.stringify(local);
     applyingRemote = true;
     setLocalState(merged);
     applyingRemote = false;
     setStatus("synced");
+    // If the local merge gained anything from remote, push the merged result
+    // back so the OTHER device sees our contribution too. (Transaction-based
+    // pushNow already de-dupes vs. cloud, so this is safe to call always.)
+    if (localChanged) schedulePush();
   }, (err) => {
     console.warn("[sync] snapshot error", err);
     setStatus("error", err.message);
