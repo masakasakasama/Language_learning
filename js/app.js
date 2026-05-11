@@ -141,6 +141,7 @@ window.App = (function () {
     setInterval(recordSession, 30000);
 
     refreshTopbar();
+    setupPullToRefresh();
     // If page was opened via a join link, skip onboarding — sync.js will set things up
     const isJoiningViaLink = /[#&?]join=/.test(location.hash + location.search);
     if (!Storage.isOnboarded() && !isJoiningViaLink) {
@@ -148,6 +149,112 @@ window.App = (function () {
     } else {
       go("home");
     }
+  }
+
+  // ─────────────── Pull-to-refresh ───────────────
+  // Swipe down from the top of the view → refresh the current screen and
+  // push a cloud-sync update. Threshold is ~70px of pull distance.
+  function setupPullToRefresh() {
+    const view = document.getElementById("view");
+    if (!view) return;
+    const THRESHOLD = 70;
+    let startY = null;
+    let deltaY = 0;
+    let active = false;
+    let indicator = null;
+
+    function ensureIndicator() {
+      if (indicator) return indicator;
+      indicator = document.createElement("div");
+      indicator.className = "ptr-indicator";
+      indicator.innerHTML = "↓";
+      document.body.appendChild(indicator);
+      return indicator;
+    }
+    function showIndicator(distance) {
+      const ind = ensureIndicator();
+      const visible = Math.min(distance, THRESHOLD * 1.6);
+      ind.style.transition = "";
+      ind.style.transform = `translate(-50%, ${visible}px)`;
+      ind.style.opacity = String(Math.min(1, distance / THRESHOLD));
+      if (distance >= THRESHOLD) {
+        ind.classList.add("ptr-ready");
+        ind.innerHTML = "↑";
+      } else {
+        ind.classList.remove("ptr-ready");
+        ind.innerHTML = "↓";
+      }
+    }
+    function hideIndicator() {
+      if (!indicator) return;
+      indicator.style.transition = "transform 0.25s ease, opacity 0.25s ease";
+      indicator.style.transform = "translate(-50%, -60px)";
+      indicator.style.opacity = "0";
+    }
+    function loadingIndicator() {
+      const ind = ensureIndicator();
+      ind.classList.remove("ptr-ready");
+      ind.classList.add("ptr-loading");
+      ind.innerHTML = "⟳";
+      ind.style.transition = "transform 0.2s ease";
+      ind.style.transform = "translate(-50%, 18px)";
+      ind.style.opacity = "1";
+    }
+    function clearLoading() {
+      if (!indicator) return;
+      indicator.classList.remove("ptr-loading");
+      hideIndicator();
+    }
+
+    async function doRefresh() {
+      loadingIndicator();
+      try {
+        if (window.Storage && Storage.reload) Storage.reload();
+        if (window.Sync && Sync.enabled && Sync.enabled()) {
+          try { await Sync.pushNow(); } catch (e) {}
+        }
+        go(currentView, currentView === "browse" ? undefined : undefined);
+        refreshTopbar();
+      } finally {
+        setTimeout(clearLoading, 350);
+      }
+    }
+
+    view.addEventListener("touchstart", (e) => {
+      // Only when scrolled to top and no modal is open
+      const modalOpen = document.getElementById("modal-backdrop") &&
+                        !document.getElementById("modal-backdrop").classList.contains("hidden");
+      if (view.scrollTop > 0 || modalOpen) return;
+      startY = e.touches[0].clientY;
+      deltaY = 0;
+      active = true;
+    }, { passive: true });
+
+    view.addEventListener("touchmove", (e) => {
+      if (!active || startY == null) return;
+      deltaY = e.touches[0].clientY - startY;
+      if (deltaY > 0) {
+        // Resist scroll bounce while pulling down
+        if (e.cancelable) e.preventDefault();
+        showIndicator(deltaY);
+      } else {
+        hideIndicator();
+      }
+    }, { passive: false });
+
+    function endPull() {
+      if (!active) return;
+      active = false;
+      if (deltaY >= THRESHOLD) {
+        doRefresh();
+      } else {
+        hideIndicator();
+      }
+      startY = null;
+      deltaY = 0;
+    }
+    view.addEventListener("touchend", endPull);
+    view.addEventListener("touchcancel", endPull);
   }
 
   return { init, go, showUnit, startLesson, refreshTopbar, speak, speakSlow, examplesFor, getLangPack, getLangMeta, allCards, cardById };
