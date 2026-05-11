@@ -25,9 +25,7 @@ const CODE_KEY   = "mochi.firebase.syncCode";
 const MODE_KEY   = "mochi.firebase.syncMode";   // "code" | "user"
 const STATE_KEY  = "mochi.v1";
 
-// Firebase config baked into the app so the partner device doesn't have to
-// paste anything. The Web API key is public on Firebase by design (security
-// lives in Firestore rules + the random sync code).
+// Firebase config baked into the app so no setup is ever required.
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyCIezNBc2VaPgt3aYcMo2e3gIUpzlJB_5w",
   authDomain: "language-learning-a740a.firebaseapp.com",
@@ -36,6 +34,11 @@ const DEFAULT_FIREBASE_CONFIG = {
   messagingSenderId: "388233596942",
   appId: "1:388233596942:web:3edeecfb8da8160955ac5f"
 };
+
+// Every device that opens this URL writes to the same Firestore document.
+// No codes, no pairing — just "open the link, you're in." The URL itself
+// is the shared secret.
+const SHARED_SYNC_CODE = "mumu-household-2026";
 
 let app = null, auth = null, db = null, unsub = null, currentUser = null;
 let syncEnabled = false, applyingRemote = false;
@@ -53,8 +56,11 @@ function getCfg() {
   return DEFAULT_FIREBASE_CONFIG;
 }
 const setCfg  = (c) => localStorage.setItem(CFG_KEY, JSON.stringify(c));
-const getCode = () => localStorage.getItem(CODE_KEY) || null;
-const setCode = (c) => localStorage.setItem(CODE_KEY, c);
+// Sync code is now fixed across all devices visiting this URL. We still
+// expose the storage helpers for back-compat but they always return the
+// shared code so existing UI / sync paths keep working.
+const getCode = () => SHARED_SYNC_CODE;
+const setCode = (_) => { /* no-op: shared code is fixed */ };
 const getMode = () => localStorage.getItem(MODE_KEY) || "code";
 const setMode = (m) => localStorage.setItem(MODE_KEY, m);
 
