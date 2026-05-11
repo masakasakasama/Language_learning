@@ -914,6 +914,18 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
 .lang-flag.big { font-size: 36px; }
 .lang-name { font-weight: 700; font-size: 16px; }
 
+.recover-banner {
+  background: linear-gradient(135deg, #fff4e0, #ffe6e6);
+  border: 2px dashed var(--bad);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+body.dark .recover-banner {
+  background: linear-gradient(135deg, #3a2a30, #2a1f25);
+  color: var(--text);
+}
+
 .hidden { display: none !important; }
 
 /* Floating Action Button (used by Browse > Add word) */

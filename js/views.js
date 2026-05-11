@@ -130,6 +130,48 @@ window.Views = (function () {
     const meta = getLangMeta(lang);
     const pack = getLangPack(lang);
 
+    // If state is empty and we have a baked-in last-known snapshot, show a
+    // very visible recovery banner at the top of Home so the user can restore
+    // with one tap (no need to dig into Profile → Backup).
+    try {
+      const root = Storage.load();
+      const currentCards = Storage.countCards ? Storage.countCards(root) : 0;
+      const lk = window.LAST_KNOWN_DATA;
+      let lkCards = 0;
+      if (lk) Object.values(lk.languages || {}).forEach((s) => { lkCards += Object.keys((s && s.cards) || {}).length; });
+      const snaps = (Storage.getSnapshots && Storage.getSnapshots()) || [];
+      const bigSnap = snaps.reduce((a, b) => (a && (a.cardCount || 0) >= (b.cardCount || 0) ? a : b), null);
+      if (currentCards === 0 && (lkCards > 0 || (bigSnap && bigSnap.cardCount > 0))) {
+        const banner = el("div", { class: "recover-banner" });
+        banner.appendChild(el("div", { style: "font-weight:700;font-size:14px;",
+          text: "🛟 学習データが空になっています" }));
+        banner.appendChild(el("div", { class: "muted small", style: "margin:4px 0 8px;line-height:1.5;",
+          html: "ワンタップで復元できます。" + (bigSnap ? " 端末内に <b>" + bigSnap.cardCount + " カード</b>のスナップショットあり。" : "") +
+                (lkCards ? " 焼き込み済みデータに <b>" + lkCards + " カード</b>あり。" : "") }));
+        const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" });
+        if (bigSnap) {
+          row.appendChild(el("button", { class: "btn primary", text: "Restore " + bigSnap.cardCount + " cards", onclick: () => {
+            const idx = snaps.indexOf(bigSnap);
+            Storage.restoreSnapshot(idx);
+            UI.toast("Restored ✨", "good");
+            App.refreshTopbar();
+            App.go("home");
+          }}));
+        }
+        if (lkCards) {
+          row.appendChild(el("button", { class: "btn warn", text: "Restore " + lkCards + " (chat record)", onclick: () => {
+            try { Storage.downloadBackup(); } catch (e) {}
+            Storage.importData(JSON.stringify(window.LAST_KNOWN_DATA), /* merge */ true);
+            UI.toast("Restored " + lkCards + " cards ✨", "good");
+            App.refreshTopbar();
+            App.go("home");
+          }}));
+        }
+        banner.appendChild(row);
+        viewEl.appendChild(banner);
+      }
+    } catch (e) {}
+
     // Hero header
     const hero = el("div", { class: "hero" });
     hero.style.background = `linear-gradient(135deg, ${meta.color}33, transparent)`;
