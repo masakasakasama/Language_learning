@@ -848,6 +848,13 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
 
 .settings { display: flex; flex-direction: column; gap: 8px; }
 .storage-info { line-height: 1.6; padding: 10px 14px; }
+.snap-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-2);
+  padding: 8px 10px; border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.snap-info { flex: 1; }
 .storage-info code { background: var(--bg-2); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 11px; }
 
 /* Toasts */

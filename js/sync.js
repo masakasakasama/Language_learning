@@ -301,6 +301,9 @@ function startListening() {
     const remote = snap.data();
     const local = getLocalState();
     if (remote.writeAt && lastPushAt && Math.abs(remote.writeAt - lastPushAt) < 800) return;
+    // ★ SAFETY: snapshot LOCAL state before applying a remote merge so we can
+    //   recover if the remote turns out to be empty/wrong.
+    try { if (window.Storage && window.Storage.saveSnapshot) window.Storage.saveSnapshot("pre-sync-merge"); } catch (e) {}
     const merged = mergeStates(local, remote);
     applyingRemote = true;
     setLocalState(merged);
@@ -494,6 +497,8 @@ async function forcePull() {
   const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js");
   const snap = await getDoc(ref);
   if (!snap.exists()) throw new Error("No data in the cloud for this code yet.");
+  // Snapshot current local state before overwriting it
+  try { if (window.Storage && window.Storage.saveSnapshot) window.Storage.saveSnapshot("before-force-pull"); } catch (e) {}
   applyingRemote = true;
   setLocalState(snap.data());
   applyingRemote = false;

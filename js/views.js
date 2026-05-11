@@ -1219,6 +1219,36 @@ window.Views = (function () {
     backup.appendChild(backupRow);
     viewEl.appendChild(backup);
 
+    // 🛟 Auto-snapshot history — kept on this device so you can rewind even
+    // without any backup file. Useful when sync ate your data.
+    const snaps = Storage.getSnapshots();
+    if (snaps.length) {
+      const snapCard = el("div", { class: "card backup-card" });
+      snapCard.appendChild(el("div", { class: "muted", text: "🛟 Auto snapshots (this device)" }));
+      snapCard.appendChild(el("div", { class: "muted small", style:"line-height:1.5;margin-bottom:6px;",
+        html: "Local rolling history of your state. Tap Restore to roll back if anything was accidentally wiped." }));
+      const snapList = el("div", { style: "display:flex;flex-direction:column;gap:6px;" });
+      snaps.forEach((s, i) => {
+        const when = new Date(s.at);
+        const ago = friendlyAgo(when);
+        const item = el("div", { class: "snap-item" });
+        item.appendChild(el("div", { class: "snap-info" }, [
+          el("div", { style:"font-weight:700;font-size:13px;", text: ago }),
+          el("div", { class: "muted small", text: s.cardCount + " cards · " + (s.reason || "auto") })
+        ]));
+        item.appendChild(el("button", { class: "btn ghost tiny", text: "Restore", onclick: () => {
+          if (!confirm(`Restore the snapshot from ${ago}? (${s.cardCount} cards). Current state will itself be snapshotted before the rollback.`)) return;
+          Storage.restoreSnapshot(i);
+          App.refreshTopbar();
+          App.go("profile");
+          UI.toast("Restored ✨", "good");
+        }}));
+        snapList.appendChild(item);
+      });
+      snapCard.appendChild(snapList);
+      viewEl.appendChild(snapCard);
+    }
+
     // Storage info note
     const info = el("div", { class: "card storage-info muted small" });
     info.innerHTML = "Your progress, review schedule, learned words and stats are stored locally in <b>localStorage</b> under the key <code>mochi.v1</code>. Nothing leaves your device.";
@@ -1447,6 +1477,20 @@ service cloud.firestore {
     ]);
     wrap.appendChild(buttons);
     UI.modal(wrap);
+  }
+
+  function friendlyAgo(d) {
+    const now = Date.now();
+    const t = d.getTime();
+    const sec = Math.max(1, Math.round((now - t) / 1000));
+    if (sec < 60) return sec + "s ago";
+    const min = Math.round(sec / 60);
+    if (min < 60) return min + "m ago";
+    const hr = Math.round(min / 60);
+    if (hr < 24) return hr + "h ago";
+    const day = Math.round(hr / 24);
+    if (day < 7) return day + "d ago";
+    return d.toISOString().slice(0, 10);
   }
 
   function statBlock(label, value) {

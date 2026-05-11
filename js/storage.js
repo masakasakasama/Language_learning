@@ -17,6 +17,8 @@
 // }
 window.Storage = (function () {
   const KEY = "mochi.v1";
+  const SNAP_KEY = "mochi.v1.snapshots";
+  const MAX_SNAPSHOTS = 8;
 
   function defaultLangState() {
     return {
@@ -70,8 +72,15 @@ window.Storage = (function () {
     return cache;
   }
 
+  let _saveCount = 0;
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (e) {}
+    // Take an auto-snapshot every 10 writes so data is recoverable even if
+    // the live state gets clobbered by a sync bug or external clear.
+    _saveCount += 1;
+    if (_saveCount % 10 === 0) {
+      try { saveSnapshot("auto-write"); } catch (e) {}
+    }
     // Notify sync layer (and anything else interested) that local state changed
     try { window.dispatchEvent(new CustomEvent("mochi:local-changed")); } catch (e) {}
   }
@@ -83,8 +92,62 @@ window.Storage = (function () {
   }
 
   function reset() {
+    // Snapshot before nuking
+    saveSnapshot("before-reset");
     cache = defaultRoot();
     save();
+  }
+
+  // ─────────────── Local snapshot history ───────────────
+  // Every time substantive state changes, we keep a rolling history of up to
+  // MAX_SNAPSHOTS most-recent local snapshots in localStorage. This protects
+  // against any path that wipes mochi.v1 (sync bug, accidental reset,
+  // bad merge), because the user can always Restore from history.
+  function countCards(root) {
+    if (!root || !root.languages) return 0;
+    let n = 0;
+    Object.values(root.languages).forEach((s) => { n += Object.keys((s && s.cards) || {}).length; });
+    return n;
+  }
+  function getSnapshots() {
+    try { return JSON.parse(localStorage.getItem(SNAP_KEY) || "[]"); }
+    catch (e) { return []; }
+  }
+  function writeSnapshots(arr) {
+    try { localStorage.setItem(SNAP_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function saveSnapshot(reason) {
+    try {
+      if (!cache) load();
+      const cards = countCards(cache);
+      // Don't snapshot a state that has zero progress.
+      if (cards === 0 && Object.keys(cache.stats?.byDate || {}).length === 0) return;
+      const snaps = getSnapshots();
+      // De-dup: if the last snapshot already has the same card count and is
+      // less than 5 minutes old, skip.
+      const newest = snaps[0];
+      const now = Date.now();
+      if (newest && newest.cardCount === cards && (now - new Date(newest.at).getTime()) < 5 * 60 * 1000) return;
+      snaps.unshift({
+        at: new Date().toISOString(),
+        reason: reason || "auto",
+        cardCount: cards,
+        data: JSON.parse(JSON.stringify(cache))
+      });
+      while (snaps.length > MAX_SNAPSHOTS) snaps.pop();
+      writeSnapshots(snaps);
+    } catch (e) {}
+  }
+  function restoreSnapshot(idx) {
+    const snaps = getSnapshots();
+    if (!snaps[idx]) return false;
+    // Take a snapshot of the CURRENT state before overwriting it, in case the
+    // restore was a mistake.
+    saveSnapshot("before-restore");
+    cache = JSON.parse(JSON.stringify(snaps[idx].data));
+    try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (e) {}
+    window.dispatchEvent(new CustomEvent("mochi:local-changed"));
+    return true;
   }
 
   // Export the whole state object so the user can save a backup file.
@@ -495,6 +558,7 @@ window.Storage = (function () {
   return {
     load, save, reload, reset, todayStr,
     exportData, importData, downloadBackup,
+    saveSnapshot, getSnapshots, restoreSnapshot, countCards,
     getLang, setLang, langState,
     getCard, setCard,
     isLearned, markLearned, learnedSet, forgetCard, cardStatus,

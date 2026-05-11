@@ -100,6 +100,10 @@ window.App = (function () {
     // Theme
     document.body.classList.toggle("dark", Storage.getTheme() === "dark");
 
+    // Take an initial snapshot of the current local state as soon as the app
+    // boots so the user has a guaranteed rollback point from "this moment".
+    try { Storage.saveSnapshot("app-init"); } catch (e) {}
+
     // Sync events
     window.addEventListener("mochi:remote-applied", () => {
       Storage.reload();
