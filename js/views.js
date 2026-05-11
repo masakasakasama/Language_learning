@@ -1361,129 +1361,20 @@ window.Views = (function () {
     viewEl.appendChild(info);
   }
 
+  // Cloud sync is fully automatic now — Firebase config is baked in and the
+  // sync code is fixed across every device on this URL. The card is purely
+  // informational so the user can confirm sync is alive.
   function syncCard() {
     const card = el("div", { class: "card sync-card" });
     card.appendChild(el("div", { class: "card-row" }, [
       el("div", {}, [
         el("div", { text: "☁️ Cloud sync", style: "font-weight:700;" }),
-        el("div", { class: "muted small", text: "Share progress with your other device" })
+        el("div", { class: "muted small", text: "Auto-syncs across every device on this URL." })
       ]),
       el("div", { class: "sync-status", id: "sync-status-pill" })
     ]));
     refreshSyncPill();
-
-    // (Legacy escape hatch: no firebase config saved → fall back to old setup.
-    // Default is hardcoded so this branch normally never triggers.)
-    if (!window.Sync || !window.Sync.isConfigured()) {
-      const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
-        el("button", { class: "btn primary", text: "Set up sync", onclick: showSyncSetup }),
-        el("button", { class: "btn ghost", text: "I have a code", onclick: showJoinByCode })
-      ]);
-      card.appendChild(row);
-      return card;
-    }
-
-    // Configured
-    const mode = window.Sync.getMode();
-    if (mode === "code") {
-      // Sync is fully automatic — no buttons, no setup. UI is purely
-      // informational so the user can confirm it's working.
-      const intro = el("div", { class: "sync-code-wrap" });
-      intro.appendChild(el("div", { style: "font-weight:700;font-size:15px;", text: "✓ Auto-syncing across devices" }));
-      intro.appendChild(el("div", { class: "muted small", style:"margin-top:4px;line-height:1.5;",
-        html: "Everyone on this URL automatically sees the same progress in real time. No buttons, no setup." }));
-      card.appendChild(intro);
-    } else {
-      // user mode (Google)
-      const user = window.Sync.user();
-      if (user) {
-        const info = el("div", { class: "sync-user" }, [
-          el("div", { text: user.displayName || user.email || "Signed in" }),
-          el("div", { class: "muted small", text: user.uid.slice(0, 12) + "…" })
-        ]);
-        card.appendChild(info);
-        const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
-          el("button", { class: "btn ghost", text: "Force sync", onclick: () => window.Sync.pushNow() }),
-          el("button", { class: "btn ghost", text: "Sign out", onclick: async () => { await window.Sync.signOut(); App.go("profile"); } })
-        ]);
-        card.appendChild(row);
-      } else {
-        const row = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;" }, [
-          el("button", { class: "btn primary", text: "Sign in with Google", onclick: async () => {
-            try { await window.Sync.signInGoogle(); App.go("profile"); }
-            catch (e) { toast("Sign-in failed: " + e.message, "bad"); }
-          }})
-        ]);
-        card.appendChild(row);
-      }
-    }
-    // Help block: permanent Firestore rules (test mode expires after 30 days)
-    const help = el("details", { class: "sync-help" });
-    help.appendChild(el("summary", { text: "ℹ️ Test mode expires in 30 days — permanent Firestore rules" }));
-    const rules = `rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /sync/{code}/{document=**} {
-      allow read, write: if true;
-    }
-  }
-}`;
-    const pre = el("pre", { class: "sync-rules", text: rules });
-    help.appendChild(pre);
-    help.appendChild(el("button", { class: "btn ghost", text: "📋 Copy rules", onclick: async () => {
-      try { await navigator.clipboard.writeText(rules); toast("Copied. Paste in Firebase Console → Firestore → Rules.", "good"); }
-      catch (e) { toast("Copy failed — long-press to select.", "bad"); }
-    }}));
-    help.appendChild(el("div", { class: "muted small", style:"margin-top:6px;line-height:1.5;",
-      html: "Open <b>Firebase Console → Firestore Database → Rules</b>, paste the rules above, then Publish. Your sync code (16 random characters) acts as the password — only people with the link can access this document." }));
-    card.appendChild(help);
-
-    const reset = el("button", { class: "btn warn ghost", style: "margin-top:8px;", text: "Disconnect", onclick: () => {
-      if (confirm("Disconnect cloud sync? Local progress is kept.")) {
-        window.Sync.disconnect();
-        App.go("profile");
-      }
-    }});
-    card.appendChild(reset);
     return card;
-  }
-
-  function showQR(payload) {
-    if (!payload) { toast("Not ready yet", "bad"); return; }
-    const wrap = el("div", { class: "lang-picker" });
-    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Scan on your other device" }));
-    wrap.appendChild(el("div", { class: "muted small center", text: "Open the camera, scan, then tap the link." }));
-    const url = "https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=" + encodeURIComponent(payload);
-    const img = el("img", { src: url, alt: "Sync QR", style: "display:block;margin:0 auto;border-radius:14px;background:white;padding:8px;width:280px;height:280px;" });
-    wrap.appendChild(img);
-    wrap.appendChild(el("div", { class: "muted small center", style:"word-break:break-all;font-family:monospace;font-size:10px;margin-top:8px;", text: payload }));
-    wrap.appendChild(el("button", { class: "btn primary big", text: "Done", onclick: () => UI.closeModal() }));
-    UI.modal(wrap);
-  }
-  function shortenLink(link) {
-    if (!link) return "—";
-    if (link.length <= 60) return link;
-    return link.slice(0, 40) + "…" + link.slice(-12);
-  }
-
-  function showJoinByCode() {
-    const wrap = el("div", { class: "lang-picker" });
-    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Join from another device" }));
-    wrap.appendChild(el("div", { class: "muted small", html:
-      "Paste the share string you copied from your other device (it starts with <code>mochi1:</code>). It contains both the Firebase config and your sync code so you don't need to set them separately." }));
-    const ta = el("textarea", { class: "ex-input", style: "min-height:120px;font-family:monospace;font-size:11px;width:100%;", placeholder: "mochi1:..." });
-    wrap.appendChild(ta);
-    wrap.appendChild(el("button", { class: "btn primary big", text: "Join sync", onclick: async () => {
-      try {
-        await window.Sync.setupFromSharePayload(ta.value.trim());
-        UI.closeModal();
-        toast("Joined! Your devices will sync now.", "good");
-        setTimeout(() => App.go("profile"), 600);
-      } catch (e) {
-        toast("Failed: " + e.message, "bad");
-      }
-    }}));
-    UI.modal(wrap);
   }
 
   function refreshSyncPill() {
@@ -1492,7 +1383,6 @@ service cloud.firestore {
     const s = window.Sync.status();
     const map = {
       "disabled":   { label: "off",        cls: "muted" },
-      "signed-out": { label: "signed out", cls: "muted" },
       "connecting": { label: "connecting…",cls: "warn"  },
       "pending":    { label: "syncing…",   cls: "warn"  },
       "synced":     { label: "synced ✓",   cls: "good"  },
@@ -1501,72 +1391,6 @@ service cloud.firestore {
     const m = map[s.state] || map.disabled;
     pill.textContent = m.label;
     pill.className = "sync-status sync-status-" + m.cls;
-  }
-
-  function showSyncSetup() {
-    const wrap = el("div", { class: "lang-picker" });
-    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Set up cloud sync" }));
-
-    // Step 1
-    wrap.appendChild(el("div", { class: "setup-step", html:
-      "<b>① Create</b> a free Firebase project at <a href='https://console.firebase.google.com' target='_blank' rel='noopener'>console.firebase.google.com</a>, then create a <b>Firestore Database</b>." }));
-
-    // Step 2 — permanent rules upfront (no 30-day surprise)
-    wrap.appendChild(el("div", { class: "setup-step", html:
-      "<b>② Paste these rules</b> in Firestore → Rules → Publish. (This makes sync work forever — no 30-day test-mode expiry.)" }));
-    const rules = `rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /sync/{code}/{document=**} {
-      allow read, write: if true;
-    }
-  }
-}`;
-    wrap.appendChild(el("pre", { class: "sync-rules", text: rules }));
-    wrap.appendChild(el("button", { class: "btn ghost", style: "margin-bottom:8px;", text: "📋 Copy rules", onclick: async () => {
-      try { await navigator.clipboard.writeText(rules); toast("Rules copied — paste into Firebase Console.", "good"); }
-      catch (e) { toast("Long-press the rules above to copy.", "bad"); }
-    }}));
-
-    // Step 3
-    wrap.appendChild(el("div", { class: "setup-step", html:
-      "<b>③ Project Settings → Web app</b> → register an app → copy <code>firebaseConfig</code> and paste below:" }));
-    const ta = el("textarea", { class: "ex-input", style: "min-height:140px;font-family:monospace;font-size:11px;text-align:left;width:100%;",
-      placeholder: '{\n  "apiKey": "...",\n  "authDomain": "...",\n  "projectId": "...",\n  "appId": "..."\n}' });
-    wrap.appendChild(ta);
-    function parseConfig() {
-      let cfg;
-      let txt = ta.value.trim();
-      if (txt.startsWith("const") || txt.startsWith("let") || txt.startsWith("var")) {
-        txt = txt.replace(/^[^=]*=\s*/, "").replace(/;$/, "");
-      }
-      try { cfg = JSON.parse(txt); }
-      catch (e) { cfg = (new Function("return (" + txt + ")"))(); }
-      if (!cfg || !cfg.apiKey || !cfg.projectId) throw new Error("Need at least apiKey + projectId");
-      return cfg;
-    }
-    const buttons = el("div", { style: "display:flex;flex-direction:column;gap:8px;" }, [
-      el("button", { class: "btn primary big", text: "Generate sync code (recommended)", onclick: async () => {
-        try {
-          const cfg = parseConfig();
-          const code = await window.Sync.setupCodeMode(cfg);
-          UI.closeModal();
-          toast("Code generated: " + code, "good");
-          App.go("profile");
-        } catch (e) { toast("Failed: " + e.message, "bad"); }
-      }}),
-      el("button", { class: "btn ghost", text: "Use Google sign-in instead", onclick: async () => {
-        try {
-          const cfg = parseConfig();
-          await window.Sync.setupUserMode(cfg);
-          UI.closeModal();
-          toast("Configured. Now sign in with Google.", "good");
-          App.go("profile");
-        } catch (e) { toast("Failed: " + e.message, "bad"); }
-      }})
-    ]);
-    wrap.appendChild(buttons);
-    UI.modal(wrap);
   }
 
   function friendlyAgo(d) {

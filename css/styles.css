@@ -743,7 +743,10 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
 .sync-status-good { background: rgba(95,184,107,0.18); color: var(--good); }
 .sync-status-warn { background: rgba(251,146,60,0.18); color: var(--warn); }
 .sync-status-bad  { background: rgba(239,111,124,0.18); color: var(--bad); }
-.sync-user { padding: 8px 10px; background: var(--surface-2); border-radius: 12px; }
+
+/* The Advanced disclosure inside the Daily-goal card still uses .sync-help
+   as its container style. Kept because that webhook integration block is
+   real UI — unlike the old "set up sync" wizard which is gone. */
 .sync-help {
   background: var(--surface-2);
   border-radius: 12px;
@@ -751,41 +754,6 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
   margin-top: 8px;
 }
 .sync-help summary { cursor: pointer; font-weight: 600; font-size: 13px; padding: 4px 0; }
-.setup-step {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--text);
-  margin: 4px 0;
-}
-.setup-step a { color: var(--accent); }
-.setup-step code { background: var(--bg-2); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 11px; }
-
-.sync-rules {
-  background: var(--bg-2);
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-family: monospace;
-  overflow-x: auto;
-  white-space: pre;
-  margin: 8px 0;
-}
-.sync-code-wrap { background: var(--surface-2); padding: 12px; border-radius: 14px; }
-.sync-join-wrap { background: var(--surface); padding: 12px; border-radius: 14px; border: 1px dashed var(--border); margin-top: 10px; }
-.sync-join-wrap .ex-input { font-family: monospace; text-transform: uppercase; letter-spacing: 1px; text-align: center; flex: 1; }
-.sync-code {
-  font-family: monospace;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  word-break: break-all;
-  text-align: center;
-  margin-top: 6px;
-  padding: 8px;
-  background: var(--surface);
-  border-radius: 10px;
-  border: 1px dashed var(--border);
-}
 
 .daily-goal-grid {
   display: grid;

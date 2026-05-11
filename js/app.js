@@ -113,10 +113,6 @@ window.App = (function () {
       // navigates back into them anyway.
       refreshTopbar();
     });
-    window.addEventListener("mochi:auth-changed", () => {
-      if (currentView === "profile") go("profile");
-      refreshTopbar();
-    });
     window.addEventListener("mochi:sync-status", () => {
       if (typeof Views.refreshSyncPill === "function") Views.refreshSyncPill();
     });
@@ -124,13 +120,6 @@ window.App = (function () {
       const d = e.detail || {};
       UI.confetti();
       UI.toast(`✨ ${d.languageName} の今日の目標達成！(${d.cardsToday}/${d.goal})`, "good");
-    });
-    window.addEventListener("mochi:joined-via-link", () => {
-      Storage.reload();
-      // If a modal is open (e.g. onboarding), close it
-      if (UI && UI.closeModal) UI.closeModal();
-      go("home");
-      UI.toast("☁️ Sync linked! Your progress will appear in a moment.", "good");
     });
 
     // Bind nav

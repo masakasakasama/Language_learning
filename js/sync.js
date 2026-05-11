@@ -1,31 +1,24 @@
 // Cloud sync via Firebase Firestore.
-// Two modes:
-//   1) "code"  — easy: a sync code (random string) acts as the shared "room".
-//                Data lives at  sync/{code}/state/main . Anonymous auth in background.
-//                No Google login. Same code on N devices = same data.
-//   2) "user"  — sign in with Google. Data lives at users/{uid}/state/main.
-// Mode is decided at setup; both work over the same Firebase project.
 //
-// A single share string ("share payload") base64-encodes  { cfg, code }  so the
-// second device only has to paste one thing — no typing the Firebase config twice.
+// Every device that opens this URL writes to the same Firestore document.
+// No setup, no sign-in, no codes — the URL itself is the shared secret and
+// the Firebase config is baked into the app.
+//
+// Push is transactional (read → merge → write inside runTransaction), so two
+// devices that have both used the app converge to the union of their data
+// without either side overwriting the other.
 
 import {
   initializeApp, getApps, getApp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup,
-  signInAnonymously, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import {
-  getFirestore, doc, setDoc, getDoc, onSnapshot, runTransaction
+  getFirestore, doc, getDoc, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-const CFG_KEY    = "mochi.firebase.config";
-const CODE_KEY   = "mochi.firebase.syncCode";
-const MODE_KEY   = "mochi.firebase.syncMode";   // "code" | "user"
-const STATE_KEY  = "mochi.v1";
+const STATE_KEY = "mochi.v1";
 
-// Firebase config baked into the app so no setup is ever required.
+// Hardcoded Firebase project. Web API keys are designed to be public; security
+// lives in Firestore rules + the hardcoded SHARED_SYNC_CODE.
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyCIezNBc2VaPgt3aYcMo2e3gIUpzlJB_5w",
   authDomain: "language-learning-a740a.firebaseapp.com",
@@ -34,43 +27,16 @@ const DEFAULT_FIREBASE_CONFIG = {
   messagingSenderId: "388233596942",
   appId: "1:388233596942:web:3edeecfb8da8160955ac5f"
 };
-
-// Every device that opens this URL writes to the same Firestore document.
-// No codes, no pairing — just "open the link, you're in." The URL itself
-// is the shared secret.
 const SHARED_SYNC_CODE = "mumu-household-2026";
 
-let app = null, auth = null, db = null, unsub = null, currentUser = null;
+let app = null, db = null, unsub = null;
 let syncEnabled = false, applyingRemote = false;
 let lastPushAt = 0;
 const writeDebounceMs = 300;   // near-real-time
 let pushTimer = null;
 let pushRetryAttempt = 0;
 let permanentErrorShown = false;
-
-function getCfg() {
-  // Prefer a saved user-overridden config (legacy), otherwise fall back to the
-  // baked-in default so sync just works on a fresh device.
-  try {
-    const stored = JSON.parse(localStorage.getItem(CFG_KEY) || "null");
-    if (stored && stored.apiKey) return stored;
-  } catch (e) {}
-  return DEFAULT_FIREBASE_CONFIG;
-}
-const setCfg  = (c) => localStorage.setItem(CFG_KEY, JSON.stringify(c));
-// Sync code is now fixed across all devices visiting this URL. We still
-// expose the storage helpers for back-compat but they always return the
-// shared code so existing UI / sync paths keep working.
-const getCode = () => SHARED_SYNC_CODE;
-const setCode = (_) => { /* no-op: shared code is fixed */ };
-const getMode = () => localStorage.getItem(MODE_KEY) || "code";
-const setMode = (m) => localStorage.setItem(MODE_KEY, m);
-
-function clearLocalSync() {
-  localStorage.removeItem(CFG_KEY);
-  localStorage.removeItem(CODE_KEY);
-  localStorage.removeItem(MODE_KEY);
-}
+let lastStatus = { state: "disabled", message: "" };
 
 function getLocalState() {
   try { return JSON.parse(localStorage.getItem(STATE_KEY) || "{}"); }
@@ -80,37 +46,9 @@ function setLocalState(s) {
   localStorage.setItem(STATE_KEY, JSON.stringify(s));
   window.dispatchEvent(new CustomEvent("mochi:remote-applied"));
 }
-
-// Random 16-char base32-ish code, easy to type
-function genCode() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // omit 0/O/1/I
-  let s = "";
-  const bytes = new Uint8Array(16);
-  (crypto || window.crypto).getRandomValues(bytes);
-  for (let i = 0; i < 16; i++) s += alphabet[bytes[i] % alphabet.length];
-  return s.slice(0, 4) + "-" + s.slice(4, 8) + "-" + s.slice(8, 12) + "-" + s.slice(12, 16);
-}
-
-// Encode { cfg, code } into a single share string (base64url of JSON)
-function buildSharePayload() {
-  const cfg = getCfg();
-  const code = getCode();
-  if (!cfg || !code) return null;
-  const json = JSON.stringify({ cfg, code, mode: "code" });
-  return "mochi1:" + btoa(json).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-function parseSharePayload(s) {
-  if (!s) return null;
-  s = s.trim();
-  if (s.startsWith("mochi1:")) s = s.slice("mochi1:".length);
-  s = s.replace(/-/g, "+").replace(/_/g, "/");
-  // pad
-  while (s.length % 4) s += "=";
-  try {
-    const obj = JSON.parse(atob(s));
-    if (obj && obj.cfg && obj.code) return obj;
-  } catch (e) {}
-  return null;
+function setStatus(state, message) {
+  lastStatus = { state, message: message || "" };
+  window.dispatchEvent(new CustomEvent("mochi:sync-status", { detail: lastStatus }));
 }
 
 // ─────────────── Smart merge ───────────────
@@ -160,15 +98,11 @@ function mergeStates(local, remote) {
     });
     out.stats.byDate[d] = merged;
   });
-  // Webhook URL is a global user-level setting → take latest writer
   if (remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt)) {
     if (remote.webhookUrl) out.webhookUrl = remote.webhookUrl;
   }
-  // notified registry: union (no double-fire across devices)
   out.notified = Object.assign({}, local.notified || {}, remote.notified || {});
 
-  // Daily achievements per (date, language) — union, prefer "achieved=true",
-  // and keep the earliest `at` timestamp.
   out.dailyAchievements = out.dailyAchievements || {};
   const la = local.dailyAchievements || {};
   const ra = remote.dailyAchievements || {};
@@ -217,8 +151,6 @@ function mergeStates(local, remote) {
     Object.keys(b.lessonsCompleted || {}).forEach((id) => merged.lessonsCompleted[id] = true);
     Object.keys(b.learned || {}).forEach((id) => merged.learned[id] = true);
 
-    // Self-marks: per-card union; if both sides set the same card to a
-    // different value, prefer remote when remote.writeAt is later
     const ma = a.marks || {};
     const mb = b.marks || {};
     merged.marks = {};
@@ -231,7 +163,6 @@ function mergeStates(local, remote) {
 
     merged.xp = Math.max(a.xp || 0, b.xp || 0);
     merged.level = Math.max(a.level || 1, b.level || 1);
-    // Daily goal: take the latest-modified side (use parent writeAt)
     if (typeof b.dailyGoal === "number") {
       if (typeof a.dailyGoal !== "number" || (remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt))) {
         merged.dailyGoal = b.dailyGoal;
@@ -240,7 +171,6 @@ function mergeStates(local, remote) {
       }
     }
 
-    // Custom cards: union by id (so user's hand-added words sync across devices)
     const customA = a.customCards || [];
     const customB = b.customCards || [];
     const seenIds = new Set();
@@ -254,23 +184,12 @@ function mergeStates(local, remote) {
   return out;
 }
 
-// ─────────────── Doc path ───────────────
+// ─────────────── Doc / Push / Pull ───────────────
 function docRef() {
   if (!db) return null;
-  if (getMode() === "code") {
-    const code = getCode();
-    if (!code) return null;
-    return doc(db, "sync", code, "state", "main");
-  }
-  if (!currentUser) return null;
-  return doc(db, "users", currentUser.uid, "state", "main");
+  return doc(db, "sync", SHARED_SYNC_CODE, "state", "main");
 }
 
-// ─────────────── Push / Pull ───────────────
-// Push is non-destructive: we read the cloud doc inside a transaction,
-// merge with the local state, and write the result back. This way two
-// devices that both opened the app independently still end up with the
-// union of their data — neither can silently overwrite the other.
 async function pushNow() {
   if (!syncEnabled || applyingRemote) return;
   const ref = docRef();
@@ -283,8 +202,6 @@ async function pushNow() {
       const merged = remote ? mergeStates(local, remote) : local;
       merged.writeAt = Date.now();
       txn.set(ref, merged);
-      // If the merge added anything from the cloud, apply it back to local
-      // immediately so this device also reflects the union.
       if (remote && JSON.stringify(merged) !== JSON.stringify(local)) {
         applyingRemote = true;
         setLocalState(merged);
@@ -308,11 +225,59 @@ async function pushNow() {
   }
 }
 
-// Show a persistent on-screen banner with the sync error message so the
-// user actually sees that something went wrong. The two most common causes
-// are (1) Firestore database not yet created in the Firebase project, or
-// (2) Firestore rules denying access. We detect each case and show the
-// right fix.
+function schedulePush() {
+  if (!syncEnabled) return;
+  if (pushTimer) clearTimeout(pushTimer);
+  setStatus("pending");
+  pushTimer = setTimeout(pushNow, writeDebounceMs);
+}
+
+function startListening() {
+  if (unsub) { unsub(); unsub = null; }
+  const ref = docRef();
+  if (!ref) return;
+  // Immediate push so cloud always has the latest from this device.
+  try {
+    const local = getLocalState();
+    if (local && local.languages) pushNow();
+  } catch (e) {}
+  unsub = onSnapshot(ref, (snap) => {
+    if (!snap.exists()) {
+      pushNow();
+      return;
+    }
+    const remote = snap.data();
+    const local = getLocalState();
+    if (remote.writeAt && lastPushAt && Math.abs(remote.writeAt - lastPushAt) < 800) return;
+    try { if (window.Storage && window.Storage.saveSnapshot) window.Storage.saveSnapshot("pre-sync-merge"); } catch (e) {}
+    const merged = mergeStates(local, remote);
+    const localChanged = JSON.stringify(merged) !== JSON.stringify(local);
+    applyingRemote = true;
+    setLocalState(merged);
+    applyingRemote = false;
+    setStatus("synced");
+    if (localChanged) schedulePush();
+  }, (err) => {
+    console.warn("[sync] snapshot error", err);
+    setStatus("error", err.message);
+    showSyncError(err);
+  });
+}
+
+// ─────────────── Init ───────────────
+function ensureFirebaseInit() {
+  if (!app) {
+    app = getApps().length ? getApp() : initializeApp(DEFAULT_FIREBASE_CONFIG);
+    db = getFirestore(app);
+  }
+  syncEnabled = true;
+  startListening();
+  setStatus("connecting");
+}
+
+// ─────────────── Error banner ───────────────
+// Two most common failures: Firestore database not created in the project,
+// or Firestore rules denying access. Banner detects each and shows the fix.
 function showSyncError(err) {
   if (permanentErrorShown) return;
   permanentErrorShown = true;
@@ -329,7 +294,6 @@ function showSyncError(err) {
         "3. ロケーション (asia-northeast1) → 完了<br>" +
         "4. 2-3 分待ってアプリの 🔄 をタップ</span>";
     } else if (/permission|insufficient|denied/i.test(msg)) {
-      // Try to copy the rule to clipboard so the user can paste it immediately
       try {
         navigator.clipboard.writeText(
           "rules_version = '2';\n" +
@@ -351,8 +315,7 @@ function showSyncError(err) {
           "match /sync/{code}/{document=**} { allow read, write: if true; }" +
         "</code>";
     } else {
-      help =
-        "<span style='font-size:11px;opacity:.9;'>" + msg + "</span>";
+      help = "<span style='font-size:11px;opacity:.9;'>" + msg + "</span>";
     }
     const banner = document.createElement("div");
     banner.className = "sync-error-banner";
@@ -364,261 +327,20 @@ function showSyncError(err) {
   } catch (e) {}
 }
 
-function schedulePush() {
-  if (!syncEnabled) return;
-  if (pushTimer) clearTimeout(pushTimer);
-  setStatus("pending");
-  pushTimer = setTimeout(pushNow, writeDebounceMs);
-}
-
-function startListening() {
-  if (unsub) { unsub(); unsub = null; }
-  const ref = docRef();
-  if (!ref) return;
-  // Kick off an immediate push so the cloud always has at least the local
-  // state from "right now", even before any user action. This is what makes
-  // a freshly opened device merge with the other device in real time.
-  try {
-    const local = getLocalState();
-    if (local && local.languages) pushNow();
-  } catch (e) {}
-  unsub = onSnapshot(ref, (snap) => {
-    if (!snap.exists()) {
-      // First time on this code — push current local up
-      pushNow();
-      return;
-    }
-    const remote = snap.data();
-    const local = getLocalState();
-    if (remote.writeAt && lastPushAt && Math.abs(remote.writeAt - lastPushAt) < 800) return;
-    // ★ SAFETY: snapshot LOCAL state before applying a remote merge so we can
-    //   recover if the remote turns out to be empty/wrong.
-    try { if (window.Storage && window.Storage.saveSnapshot) window.Storage.saveSnapshot("pre-sync-merge"); } catch (e) {}
-    const merged = mergeStates(local, remote);
-    const localChanged = JSON.stringify(merged) !== JSON.stringify(local);
-    applyingRemote = true;
-    setLocalState(merged);
-    applyingRemote = false;
-    setStatus("synced");
-    // If the local merge gained anything from remote, push the merged result
-    // back so the OTHER device sees our contribution too. (Transaction-based
-    // pushNow already de-dupes vs. cloud, so this is safe to call always.)
-    if (localChanged) schedulePush();
-  }, (err) => {
-    console.warn("[sync] snapshot error", err);
-    setStatus("error", err.message);
-  });
-}
-
-// ─────────────── Init / Auth ───────────────
-// In "code" mode we DO NOT require any sign-in. The sync code is the shared
-// secret; Firestore rules should permit access to /sync/{code}/* (test mode does
-// this by default for 30 days; the README has a permanent rule).
-// In "user" mode we rely on Google sign-in below.
-function ensureFirebaseInit() {
-  const cfg = getCfg();
-  if (!cfg) return false;
-  if (!app) {
-    app = getApps().length ? getApp() : initializeApp(cfg);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    if (getMode() === "code") {
-      // No auth needed — connect immediately.
-      syncEnabled = true;
-      startListening();
-      setStatus("connecting");
-    } else {
-      onAuthStateChanged(auth, (user) => {
-        currentUser = user || null;
-        if (user) {
-          syncEnabled = true;
-          setStatus("connecting");
-          startListening();
-        } else {
-          syncEnabled = false;
-          if (unsub) { unsub(); unsub = null; }
-          setStatus("signed-out");
-        }
-        window.dispatchEvent(new CustomEvent("mochi:auth-changed"));
-      });
-    }
-  } else if (getMode() === "code") {
-    // Already initialized — restart listener for the (possibly new) code
-    syncEnabled = true;
-    startListening();
-  }
-  return true;
-}
-
-// ─────────────── Public actions ───────────────
-async function setupCodeMode(cfg, codeOpt) {
-  setCfg(cfg);
-  setMode("code");
-  const code = codeOpt || genCode();
-  setCode(code);
-  app = null;
-  ensureFirebaseInit();
-  return code;
-}
-async function setupUserMode(cfg) {
-  setCfg(cfg);
-  setMode("user");
-  app = null;
-  ensureFirebaseInit();
-}
-async function setupFromSharePayload(payloadStr) {
-  const obj = parseSharePayload(payloadStr);
-  if (!obj) throw new Error("Invalid share string");
-  await setupCodeMode(obj.cfg, obj.code);
-  return obj.code;
-}
-
-// Build a join URL like:
-//   https://masakasakasama.github.io/Language_learning/#join=mochi1:xxxx
-// Opening it on another device auto-configures and joins sync — no user action needed.
-function buildJoinLink() {
-  const payload = buildSharePayload();
-  if (!payload) return null;
-  return location.origin + location.pathname + "#join=" + encodeURIComponent(payload);
-}
-
-// On page load, auto-join if URL has #join=...  (or ?join=...)
-async function tryAutoJoinFromURL() {
-  let payload = null;
-  const hash = location.hash || "";
-  const m = hash.match(/[#&]join=([^&]+)/);
-  if (m) payload = decodeURIComponent(m[1]);
-  if (!payload) {
-    const params = new URLSearchParams(location.search);
-    if (params.get("join")) payload = params.get("join");
-  }
-  if (!payload) return false;
-  const obj = parseSharePayload(payload);
-  if (!obj) return false;
-  // Apply: marks app as onboarded (so the user lands straight on Home with data)
-  setCfg(obj.cfg);
-  setMode("code");
-  setCode(obj.code);
-  try {
-    const root = JSON.parse(localStorage.getItem(STATE_KEY) || "{}");
-    root.onboarded = true;
-    localStorage.setItem(STATE_KEY, JSON.stringify(root));
-  } catch (e) {}
-  // Clean the URL so the secret isn't sitting in the address bar / history
-  try { history.replaceState(null, "", location.pathname); } catch (e) {}
-  ensureFirebaseInit();
-  setStatus("connecting");
-  window.dispatchEvent(new CustomEvent("mochi:joined-via-link"));
-  return true;
-}
-
-async function signInGoogle() {
-  if (!ensureFirebaseInit()) throw new Error("Firebase not configured");
-  const provider = new GoogleAuthProvider();
-  await signInWithPopup(auth, provider);
-}
-async function signInAnon() {
-  if (!ensureFirebaseInit()) throw new Error("Firebase not configured");
-  await signInAnonymously(auth);
-}
-async function doSignOut() {
-  if (auth) await signOut(auth);
-}
-
-function disconnect() {
-  if (unsub) { unsub(); unsub = null; }
-  if (auth) signOut(auth).catch(() => {});
-  clearLocalSync();
-  app = null; auth = null; db = null; currentUser = null;
-  syncEnabled = false;
-  setStatus("disabled");
-}
-
-// Status helper
-let lastStatus = { state: "disabled", message: "" };
-function setStatus(state, message) {
-  lastStatus = { state, message: message || "" };
-  window.dispatchEvent(new CustomEvent("mochi:sync-status", { detail: lastStatus }));
-}
-
-// Listen to local writes (from Storage.save())
+// Listen to local writes (from Storage.save()) and debounce-push.
 window.addEventListener("mochi:local-changed", () => {
   if (!applyingRemote) schedulePush();
 });
 
-// Try to init on load (also handles auto-join via URL)
-window.addEventListener("DOMContentLoaded", async () => {
-  const joined = await tryAutoJoinFromURL();
-  if (joined) return; // tryAutoJoinFromURL already initialized Firebase
-  // Firebase config is baked in — always available. Auto-generate a sync code
-  // on the very first launch so the device is immediately ready to share or
-  // be joined.
-  setMode("code");
-  if (!getCode()) {
-    setCode(genCode());
-  }
+// Auto-init on load.
+window.addEventListener("DOMContentLoaded", () => {
   ensureFirebaseInit();
-  setStatus("connecting");
 });
 
-// Replace the device's current sync code with one provided by a partner.
-// Returns the cleaned code.
-function joinByCode(rawCode) {
-  if (!rawCode) throw new Error("Empty code");
-  // Normalise: uppercase, strip spaces and add hyphens every 4 chars
-  let cleaned = rawCode.toString().toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (cleaned.length < 12) throw new Error("Code is too short");
-  cleaned = cleaned.slice(0, 16);
-  const formatted = (cleaned.match(/.{1,4}/g) || []).join("-");
-  setMode("code");
-  setCode(formatted);
-  // Refresh listener with the new code
-  if (unsub) { unsub(); unsub = null; }
-  syncEnabled = true;
-  startListening();
-  setStatus("connecting");
-  window.dispatchEvent(new CustomEvent("mochi:joined-via-link"));
-  return formatted;
-}
-
-// Public API
-// Force-push current local state (overwrites cloud).
-async function forcePush() {
-  return pushNow();
-}
-// Force-pull cloud state (overwrites local). Used as an escape hatch.
-async function forcePull() {
-  const ref = docRef(); if (!ref) throw new Error("Not connected");
-  const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js");
-  const snap = await getDoc(ref);
-  if (!snap.exists()) throw new Error("No data in the cloud for this code yet.");
-  // Snapshot current local state before overwriting it
-  try { if (window.Storage && window.Storage.saveSnapshot) window.Storage.saveSnapshot("before-force-pull"); } catch (e) {}
-  applyingRemote = true;
-  setLocalState(snap.data());
-  applyingRemote = false;
-}
-
+// Public API — kept minimal: views.js only needs status + a manual push hook
+// (the topbar 🔄 button calls pushNow).
 window.Sync = {
-  isConfigured: () => !!getCfg(),
-  getConfig: getCfg,
-  getMode,
-  getCode,
-  buildSharePayload,
-  parseSharePayload,
-  setupCodeMode,
-  setupUserMode,
-  setupFromSharePayload,
-  buildJoinLink,
-  joinByCode,
-  forcePush,
-  forcePull,
-  signInGoogle,
-  signInAnon,
-  signOut: doSignOut,
-  disconnect,
   pushNow,
-  user: () => currentUser,
   status: () => lastStatus,
   enabled: () => syncEnabled
 };
