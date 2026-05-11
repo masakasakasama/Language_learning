@@ -1016,8 +1016,10 @@ window.Views = (function () {
     // Today's per-language daily-goal achievements — picked up by external
     // habit-tracker apps via webhook or by polling localStorage.
     const dailyCard = el("div", { class: "card stat-cum" });
-    dailyCard.appendChild(el("div", { class: "muted", text: "Today's daily goal — by language" }));
-    const dailyMap = Storage.dailyAchievementMap();
+    dailyCard.appendChild(el("div", { class: "muted", text: "Today's daily goal — linked to your task manager" }));
+    // Only show languages the user has flagged for task-manager tracking
+    // (default ja/ko/es; English off unless the user turns it on).
+    const dailyMap = Storage.dailyAchievementMap({ onlyTracked: true });
     const dailyGrid = el("div", { class: "daily-goal-grid" });
     Object.keys(dailyMap).forEach((l) => {
       const meta2 = getLangMeta(l);
@@ -1027,31 +1029,55 @@ window.Views = (function () {
       item.appendChild(el("div", { class: "daily-goal-name", text: meta2.nativeName }));
       item.appendChild(el("div", { class: "daily-goal-count", text: `${d.cards}/${d.goal}` }));
       item.appendChild(el("div", { class: "daily-goal-badge", text: d.achieved ? "✅" : "" }));
-      item.onclick = () => {
+      // tap to change goal
+      const goalBtn = el("button", { class: "daily-goal-edit", title: "Change goal", text: "⚙️" });
+      goalBtn.onclick = (e) => {
+        e.stopPropagation();
         const n = prompt(meta2.nativeName + " の1日の目標カード数:", String(d.goal));
         const v = parseInt(n, 10);
         if (Number.isFinite(v) && v > 0) { Storage.setDailyGoal(l, v); App.go("profile"); }
       };
+      item.appendChild(goalBtn);
+      item.onclick = () => {
+        if (confirm(meta2.nativeName + " をタスクマネージャー連携から外す？\n（達成しても task manager に送られなくなります。再度追加できます）")) {
+          Storage.setTracked(l, false);
+          App.go("profile");
+        }
+      };
       dailyGrid.appendChild(item);
     });
+    // Show inactive (untracked) languages as a small "add" row
+    const untracked = ["ja","ko","en","es"].filter((l) => !Storage.isTracked(l));
+    if (untracked.length) {
+      const addRow = el("div", { class: "daily-goal-addrow" });
+      addRow.appendChild(el("div", { class: "muted small", text: "Not linked to task manager:" }));
+      untracked.forEach((l) => {
+        const m = getLangMeta(l);
+        const btn = el("button", { class: "btn ghost tiny", title: "Link " + m.nativeName, onclick: () => {
+          Storage.setTracked(l, true); App.go("profile");
+        }}, [ m.flag + " " + m.nativeName + " ＋" ]);
+        addRow.appendChild(btn);
+      });
+      dailyCard.appendChild(addRow);
+    }
     dailyCard.appendChild(dailyGrid);
     dailyCard.appendChild(el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
-      html: "Tap a language to change its daily goal. <b>20 cards ≈ 3–5 min</b> (faster for MC, slower for typing)." }));
+      html: "Tap a language to <b>unlink</b> it from the task manager. Tap ⚙️ to change its goal. <b>20 cards ≈ 3–5 min</b>." }));
 
     // Auto-sync explainer (primary path — no setup needed beyond Cloud Sync)
     const syncOn = window.Sync && window.Sync.isConfigured && window.Sync.isConfigured();
+    const linked = Storage.trackedLangs().map((l) => getLangMeta(l).flag).join(" ");
     const integrate = el("div", { class: "integrate-block " + (syncOn ? "on" : "off") });
-    integrate.appendChild(el("div", { class: "integrate-title", text: "🔗 Task-manager auto-sync" }));
+    integrate.appendChild(el("div", { class: "integrate-title", text: "🔗 Linked to task manager: " + (linked || "—") }));
     integrate.appendChild(el("div", { class: "muted small", style: "line-height:1.5;",
       html: syncOn
-        ? "Daily achievements are <b>auto-saved</b> to your Cloud Sync code at " +
-          "<code>sync/&lt;your-code&gt;/state/main.dailyAchievements</code>. " +
-          "Any app sharing the same sync code (e.g. your task manager) " +
-          "reads from there — no webhook, no extra setup."
+        ? "When you finish a daily goal for one of the above, mumu writes it to " +
+          "<code>sync/&lt;your-code&gt;/state/main.dailyAchievements[today][lang]</code>. " +
+          "Your task-manager app reads the same Firestore doc (same sync code) and " +
+          "ticks off its 日本語 / 韓国語 / スペイン語 columns automatically — no new columns needed."
         : "Set up <b>☁️ Cloud sync</b> below first. Once you have a sync code, " +
-          "daily achievements automatically appear at " +
-          "<code>sync/&lt;your-code&gt;/state/main.dailyAchievements</code>, ready for " +
-          "your task-manager app to read."
+          "achievements for the languages above flow into your task manager's " +
+          "existing 日本語 / 韓国語 / スペイン語 columns automatically."
     }));
     dailyCard.appendChild(integrate);
 

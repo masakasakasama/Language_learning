@@ -794,6 +794,20 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
 .daily-goal-name { font-size: 12px; font-weight: 700; }
 .daily-goal-count { font-size: 13px; color: var(--muted); font-family: monospace; }
 .daily-goal-badge { position: absolute; top: 4px; right: 6px; font-size: 14px; }
+.daily-goal-edit {
+  position: absolute; bottom: 4px; right: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  width: 22px; height: 22px;
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+}
+.daily-goal-addrow {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
 
 .integrate-block {
   background: var(--surface-2);

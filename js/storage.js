@@ -26,17 +26,23 @@ window.Storage = (function () {
       marks: {},
       xp: 0,
       level: 1,
-      dailyGoal: 20  // cards/day target for THIS language
+      dailyGoal: 20,         // cards/day target for THIS language
+      trackForTaskManager: true  // included in the daily-goal grid + auto-sync
     };
   }
 
   function defaultRoot() {
+    // English is off by default for task-manager tracking because the user's
+    // habit tracker only has columns for 日本語/韓国語/スペイン語. They can
+    // toggle it back on from Profile any time.
+    const en = defaultLangState();
+    en.trackForTaskManager = false;
     return {
       currentLang: "ja",
       languages: {
         ja: defaultLangState(),
         ko: defaultLangState(),
-        en: defaultLangState(),
+        en,
         es: defaultLangState()
       },
       stats: { byDate: {} },
@@ -322,13 +328,21 @@ window.Storage = (function () {
   function isDailyAchieved(lang) {
     return todayCardsForLang(lang) >= getDailyGoal(lang);
   }
-  function dailyAchievementMap() {
+  function isTracked(lang) { return !!langState(lang).trackForTaskManager; }
+  function setTracked(lang, on) { langState(lang).trackForTaskManager = !!on; save(); }
+  function trackedLangs() {
+    return ["ja","ko","en","es"].filter((l) => isTracked(l));
+  }
+  function dailyAchievementMap(opts) {
+    const onlyTracked = opts && opts.onlyTracked;
     const out = {};
-    ["ja","ko","en","es"].forEach((l) => {
+    const langs = onlyTracked ? trackedLangs() : ["ja","ko","en","es"];
+    langs.forEach((l) => {
       out[l] = {
         cards: todayCardsForLang(l),
         goal: getDailyGoal(l),
-        achieved: isDailyAchieved(l)
+        achieved: isDailyAchieved(l),
+        tracked: isTracked(l)
       };
     });
     return out;
@@ -382,9 +396,12 @@ window.Storage = (function () {
   // auto-syncs to Firestore via Sync).
   function checkDailyAchievement(lang) {
     if (!isDailyAchieved(lang)) return;
+    // Languages excluded from task-manager tracking still get a local toast
+    // when they hit their goal, but they don't go into the synced
+    // dailyAchievements map (so the task manager doesn't see English etc.).
     if (wasNotifiedToday(lang)) return;
     markNotified(lang);
-    recordDailyAchievementInState(lang);
+    if (isTracked(lang)) recordDailyAchievementInState(lang);
     const payload = {
       source: "mumu",
       date: todayStr(),
@@ -484,6 +501,7 @@ window.Storage = (function () {
     setMark, getMark,
     addCustomCard, getCustomCards, removeCustomCard,
     getDailyGoal, setDailyGoal, todayCardsForLang, isDailyAchieved, dailyAchievementMap,
+    isTracked, setTracked, trackedLangs,
     getDailyAchievementsAll, getDailyAchievementsForDate,
     getWebhookUrl, setWebhookUrl, wasNotifiedToday,
     lessonDone, markLessonDone,
