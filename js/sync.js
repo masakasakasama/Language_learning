@@ -309,20 +309,42 @@ async function pushNow() {
 }
 
 // Show a persistent on-screen banner with the sync error message so the
-// user actually sees that something went wrong (instead of silently failing
-// in the console). Most common cause is Firestore rules denying access.
+// user actually sees that something went wrong. The two most common causes
+// are (1) Firestore database not yet created in the Firebase project, or
+// (2) Firestore rules denying access. We detect each case and show the
+// right fix.
 function showSyncError(err) {
   if (permanentErrorShown) return;
   permanentErrorShown = true;
   try {
+    const msg = (err && err.message) ? err.message : String(err);
+    let help;
+    if (/api has not been used|api.*disabled|firestore api/i.test(msg)) {
+      help =
+        "<b>Firestore Database がまだ作成されていません。</b><br>" +
+        "<a href='https://console.firebase.google.com/project/language-learning-a740a/firestore' target='_blank' rel='noopener' style='color:#fff;text-decoration:underline;'>" +
+        "Firebase Console を開く →</a><br>" +
+        "<span style='font-size:11px;opacity:.9;'>1. 「データベースを作成」をタップ<br>" +
+        "2. 「テストモードで開始」を選択<br>" +
+        "3. ロケーション (asia-northeast1) → 完了<br>" +
+        "4. 2-3 分待ってアプリの 🔄 をタップ</span>";
+    } else if (/permission|insufficient|denied/i.test(msg)) {
+      help =
+        "<b>Firestore のセキュリティルールが書き込みを拒否しています。</b><br>" +
+        "<a href='https://console.firebase.google.com/project/language-learning-a740a/firestore/rules' target='_blank' rel='noopener' style='color:#fff;text-decoration:underline;'>" +
+        "ルール画面を開く →</a><br>" +
+        "<span style='font-size:11px;opacity:.9;'>以下を貼って Publish:</span>" +
+        "<code style='display:block;padding:6px;background:rgba(0,0,0,0.25);border-radius:4px;margin-top:4px;font-size:11px;'>" +
+          "match /sync/{code}/{document=**} { allow read, write: if true; }" +
+        "</code>";
+    } else {
+      help =
+        "<span style='font-size:11px;opacity:.9;'>" + msg + "</span>";
+    }
     const banner = document.createElement("div");
     banner.className = "sync-error-banner";
     banner.innerHTML =
-      "⚠️ クラウド同期に失敗しています: <b>" + (err && err.message || err) + "</b><br>" +
-      "<span style='font-size:11px;opacity:.85;'>Firebase Console → Firestore → Rules で以下のルールが必要です（コピペしてPublish）:</span><br>" +
-      "<code style='display:block;padding:6px;background:rgba(0,0,0,0.25);border-radius:4px;margin-top:4px;font-size:11px;'>" +
-        "match /sync/{code}/{document=**} { allow read, write: if true; }" +
-      "</code>" +
+      "⚠️ クラウド同期に失敗しています<br>" + help +
       "<button class='sync-error-close' style='margin-top:6px;'>閉じる</button>";
     document.body.appendChild(banner);
     banner.querySelector(".sync-error-close").onclick = () => banner.remove();
