@@ -107,8 +107,11 @@ window.App = (function () {
     // Sync events
     window.addEventListener("mochi:remote-applied", () => {
       Storage.reload();
-      // refresh whatever screen is open
-      go(currentView);
+      // Just refresh the topbar (XP/streak/due count). Do NOT re-render the
+      // current view: if the user is in a lesson, calling go(currentView)
+      // would navigate them away mid-tap. Views re-read state when the user
+      // navigates back into them anyway.
+      refreshTopbar();
     });
     window.addEventListener("mochi:auth-changed", () => {
       if (currentView === "profile") go("profile");

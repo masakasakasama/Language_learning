@@ -577,7 +577,7 @@ function joinByCode(rawCode) {
   syncEnabled = true;
   startListening();
   setStatus("connecting");
-  window.dispatchEvent(new CustomEvent("mumu:joined-via-link"));
+  window.dispatchEvent(new CustomEvent("mochi:joined-via-link"));
   return formatted;
 }
 
