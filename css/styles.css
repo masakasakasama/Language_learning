@@ -910,42 +910,6 @@ body.dark .mark-btn-big.mark-dontknow.active { color: #ffb8c0; }
 .form-field .ex-input { text-align: left; padding: 10px 12px; font-size: 14px; }
 .form-field select.ex-input { background: var(--surface); cursor: pointer; }
 
-/* Pull-to-refresh indicator that follows the finger from the top */
-.ptr-indicator {
-  position: fixed;
-  top: var(--topbar-h);
-  left: 50%;
-  transform: translate(-50%, -60px);
-  width: 44px; height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--accent);
-  font-size: 20px;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-  border: 2px solid var(--border);
-  opacity: 0;
-  z-index: 35;
-  pointer-events: none;
-}
-.ptr-indicator.ptr-ready {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-.ptr-indicator.ptr-loading {
-  animation: ptr-spin 0.85s linear infinite;
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-@keyframes ptr-spin {
-  to { transform: translate(-50%, 18px) rotate(360deg); }
-}
-
 /* Tiny dev label, fixed bottom-right above the bottom nav */
 .version-tag {
   position: fixed;
