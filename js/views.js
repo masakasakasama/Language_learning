@@ -276,10 +276,14 @@ window.Views = (function () {
     const steps = [];
     if (lesson.type === "flashcards") {
       const pool = lesson.cards;
+      // すべての intro を見せたあとに、シャッフルされた練習をやる。
+      // (元のように "intro → 直後に同じ単語の practice" だと、ただの即時記憶
+      // ゲームになってしまい英→日の連続感が出てしまうため)
       lesson.cards.forEach((c) => {
         steps.push({ kind: "intro", card: c });
-        steps.push({ kind: "practice", card: c, pool });
       });
+      const practices = lesson.cards.map((c) => ({ kind: "practice", card: c, pool }));
+      UI.shuffle(practices).forEach((p) => steps.push(p));
     } else if (lesson.type === "quiz") {
       const pool = lesson.cards;
       // mix MC, listening, typing
