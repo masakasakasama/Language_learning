@@ -7,6 +7,117 @@ window.Views = (function () {
   }
   function getLangMeta(lang) { return DATA_LANGS[lang]; }
 
+  // むむたんの今日のひとこと。状況（連続日数・復習待ち・時間帯・進捗）
+  // に応じて候補プールを選び、その日のうちは同じ言葉が出るよう
+  // 「年内日数」をシードにして1日1回ローテーションする。
+  function mumuMessage(ctx) {
+    const now = new Date();
+    const hour = now.getHours();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const daySeed = Math.floor((now - start) / 86400000);
+    const { lang, langName, due, streak, todayCards, goal } = ctx;
+
+    // むむたんの「やぴやぴ」決め台詞。今日（2026-05-11, daySeed=131）から
+    // 5日おきに登場する。ゴール達成や復習多すぎなど緊急性のあるコンテキストは
+    // そちらを優先。
+    const FEATURED = "やぴやぴできるようにいっぱい覚えよう 🐰💕";
+    const goalNotMet = todayCards < goal;
+    const noBigContext = streak < 7 && due <= 5;
+    if (goalNotMet && noBigContext && daySeed % 5 === 1) {
+      return { mood: "hi", bubble: FEATURED };
+    }
+
+    let mood = "happy";
+    let pool = [];
+
+    if (todayCards >= goal && goal > 0) {
+      mood = "proud";
+      pool = [
+        "今日のゴール達成！むむたんも嬉しい ✨",
+        "やったね、今日のミッション完了！🎉",
+        "完璧！もう休んでもいいよ、続けるなら全力で応援する 💪",
+        "目標クリア！この調子のあなたが好き 💕",
+        "今日もえらい。明日のあなたが助かるよ ☘️"
+      ];
+    } else if (streak >= 30) {
+      mood = "proud";
+      pool = [
+        `${streak} 日連続！もはや習慣だね 🔥`,
+        `${streak} 日… むむたんも尊敬しちゃう ✨`,
+        `${streak} 日続いてる。本当のがんばり屋さんだ 💪`,
+        `${streak} 日連続、すごすぎる！ 自分を褒めて 🌟`
+      ];
+    } else if (streak >= 7) {
+      mood = "happy";
+      pool = [
+        `${streak} 日連続！止まらないでね 🔥`,
+        `1週間以上やってる！自慢してもいい 🎀`,
+        `${streak} 日連続、習慣化の兆し 🌱`,
+        `${streak} 日も… むむたん感動 💕`
+      ];
+    } else if (streak === 0 && todayCards === 0) {
+      mood = "thinking";
+      pool = [
+        "今日が新しいスタート。1分でも十分 🐰",
+        "ちょっとだけでも触ってみない？むむたん待ってた 💕",
+        "忘れちゃう前にもう一度。一緒に思い出そう ✨",
+        "小さい一歩からでOK。むむたんも一緒だよ 🌱",
+        "今日からまた、ね。気楽に始めよう ☁️"
+      ];
+    } else if (due > 0) {
+      mood = "thinking";
+      pool = [
+        `復習が <b>${due}</b> 個待ってるよ。少しずつでOK 🌱`,
+        `<b>${due}</b> 個の単語が「会いたい」って言ってる 🐰`,
+        `復習タイム！忘れる前にちょっと見直そう 📖`,
+        `${due} 個だけでも、未来のあなたが助かる ✨`,
+        `むむたんも一緒に頑張る、${due} 個やってみない？ 💕`
+      ];
+    } else if (hour < 11) {
+      mood = "hi";
+      pool = [
+        "おはよう！朝の脳はピカピカだよ 🌅",
+        "コーヒー片手にちょっとどう？ ☕",
+        "朝1分の復習で1日が変わるかも 🌷",
+        "今日は何から覚えようか？ 💭",
+        "今日も一日、無理しすぎないでね 💖"
+      ];
+    } else if (hour >= 22) {
+      mood = "happy";
+      pool = [
+        "おやすみ前に5分だけ寄って ✨",
+        "夜は記憶が定着しやすいよ 🌙",
+        "今日の最後にもう一回見てから寝よう 💤",
+        "1日のシメに頑張った自分を褒めて 💕",
+        "寝る前のひと口、効きます 🍡"
+      ];
+    } else if (hour >= 18) {
+      mood = "happy";
+      pool = [
+        "夕方の落ち着いた時間、いい勉強タイム 🌆",
+        "今日の振り返り、5分でできるよ ✨",
+        "残り時間、ちょっとだけ進めてみない？ 🌷",
+        "夜ごはん前にひとつだけ、どう？ 🍙"
+      ];
+    } else {
+      mood = "happy";
+      pool = [
+        "今日もちょっとずつ進もうね 💪",
+        "1単語覚えれば、それは大成功 ✨",
+        "むむたんも一緒にがんばる！ 🐰💕",
+        "焦らないで、楽しもう 🌷",
+        "今のあなたは昨日より一歩進んでる 🌱",
+        "好きな単語からでOK。気楽にね ☁️",
+        `${langName}、一緒に楽しもう 💖`,
+        "5分だけでも来てくれて嬉しい ✨",
+        "完璧じゃなくていい、続けることがえらい 🌸"
+      ];
+    }
+
+    const bubble = pool[daySeed % pool.length];
+    return { mood, bubble };
+  }
+
   // ─────────────── HOME ───────────────
   function home(viewEl) {
     clear(viewEl);
@@ -38,10 +149,15 @@ window.Views = (function () {
 
     // Mascot greeting
     const due = SRS.countDue(App.allCards(lang), lang);
-    let mood = "happy";
-    let bubble = "Let's learn some " + meta.name + "! 💖";
-    if (due > 0) { mood = "thinking"; bubble = `You have <b>${due}</b> card${due===1?"":"s"} to review. 🔄`; }
-    if (today.cards >= goalCards) { mood = "proud"; bubble = "Daily goal reached! ✨"; }
+    const streak = Storage.getStreak();
+    const { mood, bubble } = mumuMessage({
+      lang,
+      langName: meta.nativeName,
+      due,
+      streak: streak.current,
+      todayCards: today.cards,
+      goal: goalCards
+    });
     viewEl.appendChild(mascot(mood, bubble));
 
     // Levels with units

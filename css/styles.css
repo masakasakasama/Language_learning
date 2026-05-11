@@ -225,6 +225,33 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 }
 @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 .mascot-face { font-size: 28px; flex-shrink: 0; min-width: 80px; text-align: center; font-family: 'Noto Sans JP', monospace; }
+.mascot-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+.mascot-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+}
+.mascot-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+.mascot-proud .mascot-img    { box-shadow: 0 0 0 3px #fcd34d, 0 4px 12px rgba(252,211,77,0.4); }
+.mascot-thinking .mascot-img { transform: rotate(-3deg); }
+.mascot-sad .mascot-img      { filter: grayscale(0.4) saturate(0.7); }
+.mascot-hi .mascot-img       { animation: bob 1.5s ease-in-out infinite; }
 .mascot-bubble {
   background: var(--surface-2);
   padding: 10px 14px;

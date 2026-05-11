@@ -55,18 +55,15 @@ window.UI = (function () {
     }
   }
 
+  // Mascot = "むむたん" (the bunny). Different moods get different visual hints
+  // (border glow, slight filter) but the avatar itself is always the bunny.
   function mascot(mood, text) {
-    // mood: happy | thinking | sad | proud
-    const faces = {
-      happy:    "(=^･ω･^=)♪",
-      thinking: "(・_・?)",
-      sad:      "(T_T)",
-      proud:    "(=^‥^=)✨",
-      hi:       "(=^‥^=)ﾉ"
-    };
-    const face = faces[mood] || faces.happy;
-    return el("div", { class: "mascot mascot-" + (mood || "happy") }, [
-      el("div", { class: "mascot-face", text: face }),
+    const moodClass = "mascot-" + (mood || "happy");
+    return el("div", { class: "mascot " + moodClass }, [
+      el("div", { class: "mascot-avatar" }, [
+        el("img", { class: "mascot-img", src: "assets/mumu.jpg", alt: "むむたん" }),
+        el("div", { class: "mascot-name", text: "むむたん" })
+      ]),
       text ? el("div", { class: "mascot-bubble", html: text }) : null
     ]);
   }
