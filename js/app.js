@@ -152,15 +152,21 @@ window.App = (function () {
   }
 
   // ─────────────── Pull-to-refresh ───────────────
-  // Swipe down from the top of the view → refresh the current screen and
-  // push a cloud-sync update. Threshold is ~70px of pull distance.
+  // 一番上にいるときに、上→下へはっきり引いた場合だけ発火する。
+  //   ・touchstart 時点で scrollTop === 0 でなければそもそも作動しない
+  //   ・移動中に少しでもスクロールが発生したら破棄
+  //   ・最初の 28px は "デッドゾーン" — 通常スクロールやバウンスのために確保
+  //   ・110px を超えたら release で location.reload() する（普通のページ更新）
   function setupPullToRefresh() {
     const view = document.getElementById("view");
     if (!view) return;
-    const THRESHOLD = 70;
+    const DEAD_ZONE = 28;
+    const THRESHOLD = 110;
+
     let startY = null;
     let deltaY = 0;
     let active = false;
+    let committed = false;   // 一度デッドゾーンを越えたか
     let indicator = null;
 
     function ensureIndicator() {
@@ -171,13 +177,13 @@ window.App = (function () {
       document.body.appendChild(indicator);
       return indicator;
     }
-    function showIndicator(distance) {
+    function show(pulled) {
       const ind = ensureIndicator();
-      const visible = Math.min(distance, THRESHOLD * 1.6);
+      const visible = Math.min(pulled, THRESHOLD * 1.3);
       ind.style.transition = "";
       ind.style.transform = `translate(-50%, ${visible}px)`;
-      ind.style.opacity = String(Math.min(1, distance / THRESHOLD));
-      if (distance >= THRESHOLD) {
+      ind.style.opacity = String(Math.min(1, pulled / 60));
+      if (pulled >= THRESHOLD) {
         ind.classList.add("ptr-ready");
         ind.innerHTML = "↑";
       } else {
@@ -185,73 +191,70 @@ window.App = (function () {
         ind.innerHTML = "↓";
       }
     }
-    function hideIndicator() {
+    function hide() {
       if (!indicator) return;
-      indicator.style.transition = "transform 0.25s ease, opacity 0.25s ease";
+      indicator.style.transition = "transform 0.25s ease, opacity 0.2s ease";
       indicator.style.transform = "translate(-50%, -60px)";
       indicator.style.opacity = "0";
     }
-    function loadingIndicator() {
-      const ind = ensureIndicator();
-      ind.classList.remove("ptr-ready");
-      ind.classList.add("ptr-loading");
-      ind.innerHTML = "⟳";
-      ind.style.transition = "transform 0.2s ease";
-      ind.style.transform = "translate(-50%, 18px)";
-      ind.style.opacity = "1";
-    }
-    function clearLoading() {
-      if (!indicator) return;
-      indicator.classList.remove("ptr-loading");
-      hideIndicator();
-    }
-
-    async function doRefresh() {
-      loadingIndicator();
-      try {
-        if (window.Storage && Storage.reload) Storage.reload();
-        if (window.Sync && Sync.enabled && Sync.enabled()) {
-          try { await Sync.pushNow(); } catch (e) {}
-        }
-        go(currentView, currentView === "browse" ? undefined : undefined);
-        refreshTopbar();
-      } finally {
-        setTimeout(clearLoading, 350);
-      }
-    }
 
     view.addEventListener("touchstart", (e) => {
-      // Only when scrolled to top and no modal is open
-      const modalOpen = document.getElementById("modal-backdrop") &&
-                        !document.getElementById("modal-backdrop").classList.contains("hidden");
-      if (view.scrollTop > 0 || modalOpen) return;
+      const modal = document.getElementById("modal-backdrop");
+      if (modal && !modal.classList.contains("hidden")) return;
+      // 一番上にいるときだけスタート
+      if (view.scrollTop > 0) return;
+      if (e.touches.length !== 1) return;
       startY = e.touches[0].clientY;
       deltaY = 0;
       active = true;
+      committed = false;
     }, { passive: true });
 
     view.addEventListener("touchmove", (e) => {
       if (!active || startY == null) return;
-      deltaY = e.touches[0].clientY - startY;
-      if (deltaY > 0) {
-        // Resist scroll bounce while pulling down
-        if (e.cancelable) e.preventDefault();
-        showIndicator(deltaY);
-      } else {
-        hideIndicator();
+      // 途中で view がスクロールしたらPTRを諦める（普通のスクロールに戻す）
+      if (view.scrollTop > 0) {
+        active = false; committed = false;
+        hide();
+        return;
       }
+      const dy = e.touches[0].clientY - startY;
+      // 上に動かしてる/動かない場合は何もしない
+      if (dy <= 0) {
+        if (committed) hide();
+        committed = false;
+        return;
+      }
+      deltaY = dy;
+      const pulled = dy - DEAD_ZONE;
+      if (pulled <= 0) {
+        // デッドゾーン内 — UIも触らず、preventDefaultもしない（普通の動きを邪魔しない）
+        return;
+      }
+      // デッドゾーン超え → ここからPTRとして引き取る
+      committed = true;
+      if (e.cancelable) e.preventDefault();
+      show(pulled);
     }, { passive: false });
 
     function endPull() {
       if (!active) return;
       active = false;
-      if (deltaY >= THRESHOLD) {
-        doRefresh();
+      const pulled = Math.max(0, deltaY - DEAD_ZONE);
+      if (committed && pulled >= THRESHOLD) {
+        // 普通のページ更新
+        if (indicator) {
+          indicator.classList.add("ptr-loading");
+          indicator.innerHTML = "⟳";
+          indicator.style.transition = "transform 0.18s ease";
+          indicator.style.transform = "translate(-50%, 18px)";
+          indicator.style.opacity = "1";
+        }
+        setTimeout(() => location.reload(), 200);
       } else {
-        hideIndicator();
+        hide();
       }
-      startY = null;
-      deltaY = 0;
+      startY = null; deltaY = 0; committed = false;
     }
     view.addEventListener("touchend", endPull);
     view.addEventListener("touchcancel", endPull);
