@@ -75,8 +75,8 @@ input { font-family: inherit; }
 body.dark .topbar { background: rgba(28, 20, 36, 0.92); }
 .topbar-inner {
   max-width: 540px; margin: 0 auto; height: 100%;
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 12px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px;
 }
 .logo-btn {
   display: flex; align-items: center; gap: 6px;
@@ -96,23 +96,34 @@ body.dark .topbar { background: rgba(28, 20, 36, 0.92); }
 }
 .lang-switcher {
   display: flex; align-items: center; gap: 4px;
-  padding: 6px 10px;
+  padding: 6px 9px;
   background: var(--surface-2);
   border-radius: 999px;
   font-weight: 600; font-size: 13px;
   border: 1px solid var(--border);
+  flex-shrink: 1; min-width: 0;
 }
-.lang-flag { font-size: 18px; }
-.lang-chevron { font-size: 10px; opacity: 0.6; }
+.lang-flag { font-size: 18px; flex-shrink: 0; }
+.lang-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lang-chevron { font-size: 10px; opacity: 0.6; flex-shrink: 0; }
 .user-switcher {
   display: flex; align-items: center; gap: 4px;
-  padding: 6px 10px;
+  padding: 6px 9px;
   background: var(--accent);
   color: #fff;
   border-radius: 999px;
   font-weight: 700; font-size: 13px;
   border: 1px solid var(--accent);
   flex-shrink: 0;
+}
+
+/* Narrow phones: collapse the language label to just the flag so the
+   refresh button never gets pushed off-screen. */
+@media (max-width: 430px) {
+  .lang-name { display: none; }
+  .logo-btn { padding: 6px 4px; }
+  .stats { gap: 4px; }
+  .stat-chip { padding: 4px 7px; }
 }
 .user-emoji { font-size: 15px; }
 
