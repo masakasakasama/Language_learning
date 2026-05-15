@@ -92,10 +92,21 @@ window.App = (function () {
     Views.lesson(document.getElementById("view"), unit, lesson);
   }
 
+  let lastActivityTs = Date.now();
+  function bumpActivity() { lastActivityTs = Date.now(); }
+
   function recordSession() {
-    const seconds = (Date.now() - sessionStartTs) / 1000;
-    if (seconds > 5) Storage.recordStudyTime(seconds);
-    sessionStartTs = Date.now();
+    const now = Date.now();
+    const elapsed = (now - sessionStartTs) / 1000;
+    const idle = (now - lastActivityTs) / 1000;
+    sessionStartTs = now;
+    // Only count time the app is actually on screen AND the user has
+    // interacted recently. Cap each credit so a long idle gap (phone
+    // locked, tab left open) can't inflate the daily total.
+    if (document.visibilityState !== "visible") return;
+    if (idle > 120) return;
+    const credit = Math.min(elapsed, 120);
+    if (credit > 2) Storage.recordStudyTime(credit);
   }
 
   function init() {
@@ -135,9 +146,14 @@ window.App = (function () {
     const refreshBtn = document.getElementById("refresh-btn");
     if (refreshBtn) refreshBtn.addEventListener("click", refreshNow);
 
+    // Track real user interaction so idle/background time isn't counted
+    ["pointerdown", "keydown", "touchstart"].forEach((ev) =>
+      window.addEventListener(ev, bumpActivity, { passive: true }));
+
     // Listen to visibility changes to record session time
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") recordSession();
+      else { sessionStartTs = Date.now(); lastActivityTs = Date.now(); }
     });
     window.addEventListener("beforeunload", recordSession);
     setInterval(recordSession, 30000);
