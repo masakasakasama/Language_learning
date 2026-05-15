@@ -487,9 +487,13 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
 .intro-label { color: var(--accent); font-weight: 700; font-size: 13px; }
 .intro-jp {
   font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif;
-  font-size: clamp(48px, 14vw, 72px);
+  font-size: clamp(28px, 9vw, 72px);
   font-weight: 700;
   margin: 6px 0;
+  max-width: 100%;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .intro-kana { color: var(--muted); font-size: 18px; }
 .intro-romaji { color: var(--muted); font-size: 14px; font-style: italic; }
@@ -589,7 +593,7 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
   cursor: pointer;
 }
 .browse-card.known { border-color: var(--good); }
-.bc-front { font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 22px; }
+.bc-front { font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 22px; overflow-wrap: anywhere; word-break: break-word; }
 .bc-back  { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .bc-hint  { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
@@ -684,7 +688,7 @@ body.dark .bottom-nav { background: rgba(42, 29, 52, 0.95); }
   border: 1px dashed var(--border);
 }
 
-.wd-front { font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif; font-size: 56px; font-weight: 700; line-height: 1; }
+.wd-front { font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif; font-size: clamp(32px, 11vw, 56px); font-weight: 700; line-height: 1.1; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .wd-kana { font-size: 18px; color: var(--muted); }
 .wd-romaji { font-size: 13px; color: var(--muted); font-style: italic; }
 .wd-back { font-size: 18px; font-weight: 600; }
