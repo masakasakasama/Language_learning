@@ -758,7 +758,7 @@ window.Views = (function () {
     const emoji = (window.EMOJI && window.EMOJI.lookup(c)) || "";
     if (emoji) body.appendChild(el("div", { class: "bc-emoji", text: emoji }));
     body.appendChild(el("div", { class: "bc-front", text: c.front || c.jp }));
-    body.appendChild(el("div", { class: "bc-back", text: c.back || c.en }));
+    body.appendChild(el("div", { class: "bc-back", text: App.meaning(c) }));
     if (c.de) body.appendChild(el("div", { class: "bc-back tr-de", text: c.de }));
     if (c.kana && c.kana !== c.front) body.appendChild(el("div", { class: "bc-hint", text: c.kana }));
     body.onclick = () => showWordDetail(c, lang, onChange);
@@ -876,7 +876,7 @@ window.Views = (function () {
     if (card.kana && card.kana !== card.front) wrap.appendChild(el("div", { class: "wd-kana", text: card.kana }));
     if (card.romaji && card.romaji !== card.kana) wrap.appendChild(el("div", { class: "wd-romaji", text: card.romaji }));
     wrap.appendChild(el("div", { class: "wd-back" }, [
-      el("span", { class: "tr-en", text: card.back || card.en }),
+      el("span", { class: "tr-en", text: App.meaning(card) }),
       card.de ? el("span", { class: "tr-de", text: card.de }) : null
     ]));
     if (card.hint) wrap.appendChild(el("div", { class: "wd-hint", text: card.hint }));

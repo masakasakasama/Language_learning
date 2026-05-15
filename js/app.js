@@ -245,7 +245,15 @@ window.App = (function () {
     }
   }
 
-  return { init, go, showUnit, startLesson, refreshTopbar, refreshNow, speak, speakSlow, examplesFor, getLangPack, getLangMeta, allCards, cardById };
+  // The meaning to display for a card. For the 俺 profile show the
+  // Japanese gloss when available; everyone else sees English.
+  function meaning(card) {
+    if (!card) return "";
+    if (Storage.getCurrentUser() === "me" && card.ja) return card.ja;
+    return card.back || card.en || "";
+  }
+
+  return { init, go, showUnit, startLesson, refreshTopbar, refreshNow, speak, speakSlow, examplesFor, getLangPack, getLangMeta, allCards, cardById, meaning };
 })();
 
 document.addEventListener("DOMContentLoaded", App.init);

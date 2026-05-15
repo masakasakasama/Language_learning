@@ -5,10 +5,10 @@ window.Exercises = (function () {
   // Build a multiple-choice exercise from a target card and a pool of distractors.
   // direction: "front-to-back" (show front, pick back) or "back-to-front"
   function buildMultipleChoice(target, pool, direction) {
-    const front = direction === "back-to-front" ? target.back : (target.front || target.jp);
-    const correct = direction === "back-to-front" ? (target.front || target.jp) : target.back;
+    const front = direction === "back-to-front" ? App.meaning(target) : (target.front || target.jp);
+    const correct = direction === "back-to-front" ? (target.front || target.jp) : App.meaning(target);
     const wrongs = pickN(pool.filter((c) => c.id !== target.id), 3, null)
-      .map((c) => direction === "back-to-front" ? (c.front || c.jp) : c.back);
+      .map((c) => direction === "back-to-front" ? (c.front || c.jp) : App.meaning(c));
     const choices = shuffle([correct, ...wrongs]);
     return {
       type: "mc",
@@ -49,7 +49,7 @@ window.Exercises = (function () {
     if (target.kana) acc.add(norm(target.kana));
     return {
       type: "type",
-      prompt: target.back || target.en || "",
+      prompt: App.meaning(target),
       hint: target.hint,
       audio: target.speakText,
       answer: word,
@@ -211,7 +211,7 @@ window.Exercises = (function () {
       wrap.appendChild(el("div", { class: "intro-romaji", text: card.romaji }));
     }
     wrap.appendChild(el("div", { class: "intro-en" }, [
-      el("span", { class: "tr-en", text: card.back || card.en }),
+      el("span", { class: "tr-en", text: App.meaning(card) }),
       card.de ? el("span", { class: "tr-de", text: card.de }) : null
     ]));
 

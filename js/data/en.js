@@ -1,6 +1,33 @@
 // English content - CEFR A1 to C2
 window.DATA_EN = (function () {
 
+  // Japanese gloss keyed by the English word — shown to the 俺 profile.
+  const JA = {
+    "hello":"こんにちは","hi":"やあ","good morning":"おはよう","good evening":"こんばんは",
+    "good night":"おやすみ","goodbye":"さようなら","thank you":"ありがとう","sorry":"ごめんなさい",
+    "please":"お願いします","yes":"はい","no":"いいえ","I":"私","you":"あなた","he":"彼","she":"彼女",
+    "it":"それ","we":"私たち","they":"彼ら","one":"1","two":"2","three":"3","four":"4","five":"5",
+    "six":"6","seven":"7","eight":"8","nine":"9","ten":"10","mother":"母","father":"父",
+    "sister":"姉妹","brother":"兄弟","son":"息子","daughter":"娘","family":"家族","friend":"友だち",
+    "water":"水","bread":"パン","rice":"米／ごはん","apple":"りんご","egg":"卵","milk":"牛乳",
+    "coffee":"コーヒー","tea":"お茶","fish":"魚","to be":"〜である","to have":"持っている",
+    "to eat":"食べる","to drink":"飲む","to go":"行く","to come":"来る","to see":"見る","to like":"好む",
+    "big":"大きい","small":"小さい","good":"良い","bad":"悪い","happy":"幸せ","sad":"悲しい",
+    "hot":"暑い／熱い","cold":"寒い／冷たい","wake up":"目を覚ます","get dressed":"服を着る",
+    "have breakfast":"朝食をとる","go to work":"仕事に行く","come home":"帰宅する",
+    "take a shower":"シャワーを浴びる","go to bed":"寝る","shop":"買い物する","buy":"買う","sell":"売る",
+    "price":"値段","cheap":"安い","expensive":"高い","receipt":"レシート","cash":"現金","card":"カード",
+    "flight":"フライト","luggage":"荷物","passport":"パスポート","delay":"遅延","reservation":"予約",
+    "destination":"目的地","souvenir":"お土産","agree":"同意する","disagree":"反対する","maybe":"たぶん",
+    "probably":"おそらく","definitely":"間違いなく","I think":"私は思う","actually":"実は",
+    "challenge":"課題","opportunity":"機会","assumption":"思い込み","consequence":"結果",
+    "controversy":"論争","sustainable":"持続可能な","look up":"調べる","give up":"あきらめる",
+    "put off":"延期する","come across":"偶然出会う","bring about":"引き起こす","nuance":"ニュアンス",
+    "mitigate":"和らげる","scrutinize":"精査する","pragmatic":"実用的な","ambiguous":"あいまいな",
+    "a piece of cake":"とても簡単なこと","break the ice":"場の緊張をほぐす","hit the books":"猛勉強する",
+    "under the weather":"体調が悪い","spill the beans":"秘密を漏らす","ubiquitous":"どこにでもある",
+    "serendipity":"思いがけない幸運","ephemeral":"はかない","recalcitrant":"反抗的な","epitomize":"体現する"
+  };
   function vocabCards(deck, level, items) {
     return items.map((it) => ({
       id: "en:vocab:" + deck + ":" + it[0],
@@ -12,6 +39,7 @@ window.DATA_EN = (function () {
       kana: it[1] || "",
       romaji: it[1] || "",
       en: it[2],
+      ja: JA[it[0]] || "",
       de: DE_VOCAB[it[0]] || "",
       front: it[0], back: it[2], hint: it[1] || "",
       speakText: it[0]
