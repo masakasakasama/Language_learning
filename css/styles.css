@@ -120,7 +120,7 @@ body.dark .topbar { background: rgba(28, 20, 36, 0.92); }
 /* Narrow phones: collapse the language label to just the flag so the
    refresh button never gets pushed off-screen. */
 @media (max-width: 430px) {
-  .lang-name { display: none; }
+  .lang-switcher .lang-name { display: none; }
   .logo-btn { padding: 6px 4px; }
   .stats { gap: 4px; }
   .stat-chip { padding: 4px 7px; }
