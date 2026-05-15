@@ -7,6 +7,13 @@ window.Views = (function () {
   }
   function getLangMeta(lang) { return DATA_LANGS[lang]; }
 
+  // Result/UI text localisation. The 俺 profile wants the app chrome in
+  // Japanese; everyone else keeps English. L("English","日本語") → picks one.
+  function L(en, ja) {
+    try { return Storage.getCurrentUser() === "me" ? ja : en; }
+    catch (e) { return en; }
+  }
+
   // むむたんの今日のひとこと。状況（連続日数・復習待ち・時間帯・進捗）
   // に応じて候補プールを選び、その日のうちは同じ言葉が出るよう
   // 「年内日数」をシードにして1日1回ローテーションする。
@@ -450,14 +457,14 @@ window.Views = (function () {
       confetti();
       clear(stage);
       const wrap = el("div", { class: "lesson-finish" });
-      wrap.appendChild(mascot("proud", "Lesson complete! ✨"));
+      wrap.appendChild(mascot("proud", L("Lesson complete! ✨", "レッスン完了！✨")));
       const summary = el("div", { class: "card finish-summary" });
-      summary.appendChild(el("div", { class: "fs-row" }, [el("span", { text: "XP earned" }), el("b", { text: "+" + (10 + correctCount * 5) })]));
-      summary.appendChild(el("div", { class: "fs-row" }, [el("span", { text: "Correct" }), el("b", { text: correctCount + "" })]));
+      summary.appendChild(el("div", { class: "fs-row" }, [el("span", { text: L("XP earned","獲得XP") }), el("b", { text: "+" + (10 + correctCount * 5) })]));
+      summary.appendChild(el("div", { class: "fs-row" }, [el("span", { text: L("Correct","正解数") }), el("b", { text: correctCount + "" })]));
       const streak = Storage.getStreak();
-      summary.appendChild(el("div", { class: "fs-row" }, [el("span", { text: "Streak" }), el("b", { text: streak.current + " 🔥" })]));
+      summary.appendChild(el("div", { class: "fs-row" }, [el("span", { text: L("Streak","連続") }), el("b", { text: streak.current + " 🔥" })]));
       wrap.appendChild(summary);
-      const home = el("button", { class: "btn primary big", onclick: () => App.go("home"), text: "Home" });
+      const home = el("button", { class: "btn primary big", onclick: () => App.go("home"), text: L("Home","ホーム") });
       wrap.appendChild(home);
       stage.appendChild(wrap);
     }
@@ -484,8 +491,8 @@ window.Views = (function () {
     const dueIds = SRS.dueCardIds(all, lang);
 
     if (!dueIds.length) {
-      viewEl.appendChild(mascot("happy", "No cards due! 🎉<br>Come back tomorrow."));
-      const btn = el("button", { class: "btn primary big", text: "Back to Learn", onclick: () => App.go("home") });
+      viewEl.appendChild(mascot("happy", L("No cards due! 🎉<br>Come back tomorrow.", "今日の復習はなし！🎉<br>また明日来てね。")));
+      const btn = el("button", { class: "btn primary big", text: L("Back to Learn","学習に戻る"), onclick: () => App.go("home") });
       viewEl.appendChild(btn);
       return;
     }
@@ -516,8 +523,8 @@ window.Views = (function () {
         confetti();
         clear(stage);
         const wrap = el("div", { class: "lesson-finish" });
-        wrap.appendChild(mascot("proud", `Review complete! ${correct}/${cards.length}`));
-        wrap.appendChild(el("button", { class: "btn primary big", text: "Home", onclick: () => App.go("home") }));
+        wrap.appendChild(mascot("proud", L(`Review complete! ${correct}/${cards.length}`, `復習完了！${correct}/${cards.length}`)));
+        wrap.appendChild(el("button", { class: "btn primary big", text: L("Home","ホーム"), onclick: () => App.go("home") }));
         stage.appendChild(wrap);
         return;
       }
@@ -1013,25 +1020,25 @@ window.Views = (function () {
     const range30 = Storage.getStatsForRange(30);
 
     // Header with mascot + language
-    viewEl.appendChild(mascot("hi", `Hi! Tracking your <b>${meta.nativeName}</b> progress 💖`));
+    viewEl.appendChild(mascot("hi", L(`Hi! Tracking your <b>${meta.nativeName}</b> progress 💖`, `やっほー！<b>${meta.nativeName}</b>の進み具合だよ💖`)));
 
     // Today summary card (Anki-like)
     const todayCard = el("div", { class: "card stat-today" });
-    todayCard.appendChild(el("div", { class: "muted", text: "Today" }));
-    todayCard.appendChild(el("div", { class: "stat-big", text: Math.round(today.mins) + " min" }));
+    todayCard.appendChild(el("div", { class: "muted", text: L("Today","今日") }));
+    todayCard.appendChild(el("div", { class: "stat-big", text: Math.round(today.mins) + L(" min"," 分") }));
     const grid = el("div", { class: "stat-grid" });
-    grid.appendChild(statBlock("Cards reviewed", today.cards));
-    grid.appendChild(statBlock("Lessons", today.lessons));
-    grid.appendChild(statBlock("Accuracy", today.cards ? Math.round((today.correct/today.cards)*100) + "%" : "—"));
-    grid.appendChild(statBlock("XP today", today.xp));
+    grid.appendChild(statBlock(L("Cards reviewed","復習したカード"), today.cards));
+    grid.appendChild(statBlock(L("Lessons","レッスン"), today.lessons));
+    grid.appendChild(statBlock(L("Accuracy","正答率"), today.cards ? Math.round((today.correct/today.cards)*100) + "%" : "—"));
+    grid.appendChild(statBlock(L("XP today","今日のXP"), today.xp));
     todayCard.appendChild(grid);
     viewEl.appendChild(todayCard);
 
     // Last 7 days bar chart
     const chartCard = el("div", { class: "card stat-chart" });
     chartCard.appendChild(el("div", { class: "stat-row" }, [
-      el("div", { class: "muted", text: "Last 7 days" }),
-      el("div", {}, [el("span", { class: "muted", text: "Streak " }), el("b", { class: "accent", text: streak.current + " " }), el("span", { text: "days 🔥" })])
+      el("div", { class: "muted", text: L("Last 7 days","直近7日") }),
+      el("div", {}, [el("span", { class: "muted", text: L("Streak ","連続 ") }), el("b", { class: "accent", text: streak.current + " " }), el("span", { text: L("days 🔥","日 🔥") })])
     ]));
     const max7 = Math.max(1, ...range7.map((r) => r.cards));
     const bars = el("div", { class: "bars" });
@@ -1049,8 +1056,8 @@ window.Views = (function () {
     // Last 30 day heatmap
     const heatCard = el("div", { class: "card stat-heat" });
     heatCard.appendChild(el("div", { class: "stat-row" }, [
-      el("div", { class: "muted", text: "Last 30 days" }),
-      el("div", { class: "muted small", text: "less ▢ ■ more" })
+      el("div", { class: "muted", text: L("Last 30 days","直近30日") }),
+      el("div", { class: "muted small", text: L("less ▢ ■ more","少 ▢ ■ 多") })
     ]));
     const heat = el("div", { class: "heatmap" });
     const max30 = Math.max(1, ...range30.map((r) => r.cards));
@@ -1069,21 +1076,21 @@ window.Views = (function () {
 
     // Cumulative
     const cumCard = el("div", { class: "card stat-cum" });
-    cumCard.appendChild(el("div", { class: "muted", text: "All-time" }));
+    cumCard.appendChild(el("div", { class: "muted", text: L("All-time","累計") }));
     const cumGrid = el("div", { class: "stat-grid" });
-    cumGrid.appendChild(statBlock("Total minutes", Math.round(cum.totalMins)));
-    cumGrid.appendChild(statBlock("Total cards", cum.totalCards));
-    cumGrid.appendChild(statBlock("Lessons done", cum.totalLessons));
-    cumGrid.appendChild(statBlock("Total XP", cum.totalXp));
-    cumGrid.appendChild(statBlock("Active days", cum.daysActive));
-    cumGrid.appendChild(statBlock("Longest streak", streak.longest + " 🔥"));
+    cumGrid.appendChild(statBlock(L("Total minutes","合計分数"), Math.round(cum.totalMins)));
+    cumGrid.appendChild(statBlock(L("Total cards","合計カード"), cum.totalCards));
+    cumGrid.appendChild(statBlock(L("Lessons done","完了レッスン"), cum.totalLessons));
+    cumGrid.appendChild(statBlock(L("Total XP","合計XP"), cum.totalXp));
+    cumGrid.appendChild(statBlock(L("Active days","学習日数"), cum.daysActive));
+    cumGrid.appendChild(statBlock(L("Longest streak","最長連続"), streak.longest + " 🔥"));
     cumCard.appendChild(cumGrid);
     viewEl.appendChild(cumCard);
 
     // Today's per-language daily-goal achievements — picked up by external
     // habit-tracker apps via webhook or by polling localStorage.
     const dailyCard = el("div", { class: "card stat-cum" });
-    dailyCard.appendChild(el("div", { class: "muted", text: "Today's daily goal — linked to your task manager" }));
+    dailyCard.appendChild(el("div", { class: "muted", text: L("Today's daily goal — linked to your task manager","今日の目標 — タスク管理と連携") }));
     // Only show languages the user has flagged for task-manager tracking
     // (default ja/ko/es; English off unless the user turns it on).
     const dailyMap = Storage.dailyAchievementMap({ onlyTracked: true });
@@ -1192,38 +1199,72 @@ window.Views = (function () {
       }
     });
     const learnCard = el("div", { class: "card stat-cum" });
-    learnCard.appendChild(el("div", { class: "muted", text: meta.nativeName + " — Word progress" }));
+    learnCard.appendChild(el("div", { class: "muted", text: meta.nativeName + L(" — Word progress"," — 単語の進捗") }));
     const lg = el("div", { class: "stat-grid" });
-    lg.appendChild(statBlock("Words seen", `${seen}/${allCards.length}`));
-    lg.appendChild(statBlock("Learning", learning));
-    lg.appendChild(statBlock("Mastered", mastered));
-    lg.appendChild(statBlock("My words", customCount));
+    lg.appendChild(statBlock(L("Words seen","学習した単語"), `${seen}/${allCards.length}`));
+    lg.appendChild(statBlock(L("Learning","学習中"), learning));
+    lg.appendChild(statBlock(L("Mastered","習得済み"), mastered));
+    lg.appendChild(statBlock(L("My words","自作単語"), customCount));
     learnCard.appendChild(lg);
     learnCard.appendChild(progressBar((seen / allCards.length) * 100, `linear-gradient(90deg, ${meta.color}, #7dd3fc)`));
     const wordLinks = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;" }, [
-      el("button", { class: "btn primary", text: "📖 Learned words", onclick: () => App.go("browse", { initialFilter: "learned" }) }),
-      el("button", { class: "btn ghost", text: "🌟 Mastered", onclick: () => App.go("browse", { initialFilter: "mastered" }) }),
-      el("button", { class: "btn ghost", text: "✏️ Add word", onclick: () => showAddWord(lang, () => App.go("profile")) })
+      el("button", { class: "btn primary", text: L("📖 Learned words","📖 学んだ単語"), onclick: () => App.go("browse", { initialFilter: "learned" }) }),
+      el("button", { class: "btn ghost", text: L("🌟 Mastered","🌟 習得済み"), onclick: () => App.go("browse", { initialFilter: "mastered" }) }),
+      el("button", { class: "btn ghost", text: L("✏️ Add word","✏️ 単語を追加"), onclick: () => showAddWord(lang, () => App.go("profile")) })
     ]);
     learnCard.appendChild(wordLinks);
     viewEl.appendChild(learnCard);
+
+    // Per-language achievement for THIS user — one row per studied language.
+    const userName = Storage.getUserName(Storage.getCurrentUser());
+    const langCard = el("div", { class: "card stat-cum" });
+    langCard.appendChild(el("div", { class: "muted", text: userName + L(" — Language progress"," — 言語の進捗") }));
+    const langList = el("div", { class: "lang-prog-list" });
+    Storage.getAllowedLangs().forEach((lc) => {
+      const lmeta = getLangMeta(lc);
+      if (!lmeta) return;
+      const cards = App.allCards(lc);
+      let lseen = 0, lmastered = 0;
+      cards.forEach((c) => {
+        const st = Storage.getCard(c.id, lc);
+        if (st) { lseen += 1; if (st.interval >= 21) lmastered += 1; }
+      });
+      const total = cards.length || 1;
+      const pct = Math.round((lseen / total) * 100);
+      const row = el("button", { class: "lang-prog-row" + (lc === lang ? " active" : ""), onclick: () => {
+        Storage.setLang(lc); App.refreshTopbar(); App.go("home");
+      }});
+      row.appendChild(el("div", { class: "lang-prog-flag", text: lmeta.flag }));
+      const mid = el("div", { class: "lang-prog-mid" });
+      mid.appendChild(el("div", { class: "lang-prog-name", text: lmeta.nativeName }));
+      const bar = progressBar(pct, `linear-gradient(90deg, ${lmeta.color}, #7dd3fc)`);
+      mid.appendChild(bar);
+      row.appendChild(mid);
+      row.appendChild(el("div", { class: "lang-prog-stat" }, [
+        el("div", { class: "lang-prog-seen", text: lseen + "/" + cards.length }),
+        el("div", { class: "muted small", text: "🌟 " + lmastered })
+      ]));
+      langList.appendChild(row);
+    });
+    langCard.appendChild(langList);
+    viewEl.appendChild(langCard);
 
     // Cloud sync
     viewEl.appendChild(syncCard());
 
     // Settings
     const settings = el("div", { class: "card settings" });
-    settings.appendChild(el("div", { class: "muted", text: "Settings" }));
-    const themeBtn = el("button", { class: "btn ghost", text: Storage.getTheme() === "dark" ? "🌙 Dark mode" : "☀️ Light mode", onclick: () => {
+    settings.appendChild(el("div", { class: "muted", text: L("Settings","設定") }));
+    const themeBtn = el("button", { class: "btn ghost", text: Storage.getTheme() === "dark" ? L("🌙 Dark mode","🌙 ダークモード") : L("☀️ Light mode","☀️ ライトモード"), onclick: () => {
       const t = Storage.getTheme() === "dark" ? "light" : "dark";
       Storage.setTheme(t);
       document.body.classList.toggle("dark", t === "dark");
       App.go("profile");
     }});
     settings.appendChild(themeBtn);
-    const resetBtn = el("button", { class: "btn warn", text: "Reset all progress", onclick: () => {
-      if (!confirm("Reset all progress for all languages? Tap Cancel and use Export Backup first if you want to keep a copy.")) return;
-      if (!confirm("Really wipe everything? This can't be undone.")) return;
+    const resetBtn = el("button", { class: "btn warn", text: L("Reset all progress","進捗を全部リセット"), onclick: () => {
+      if (!confirm(L("Reset all progress for all languages? Tap Cancel and use Export Backup first if you want to keep a copy.","全言語の進捗をリセットしますか？残したい場合はキャンセルして先にバックアップを書き出してください。"))) return;
+      if (!confirm(L("Really wipe everything? This can't be undone.","本当に全部消しますか？元に戻せません。"))) return;
       Storage.reset();
       App.refreshTopbar();
       App.go("home");
@@ -1233,7 +1274,7 @@ window.Views = (function () {
 
     // Backup card — explicit export/import so accidental deletes are recoverable
     const backup = el("div", { class: "card backup-card" });
-    backup.appendChild(el("div", { class: "muted", text: "📦 Backup" }));
+    backup.appendChild(el("div", { class: "muted", text: L("📦 Backup","📦 バックアップ") }));
     backup.appendChild(el("div", { class: "muted small", style:"line-height:1.5;",
       html: "Saves the WHOLE app state (all 4 languages, custom words, marks, review schedule, stats and daily achievements)." }));
 
@@ -1421,7 +1462,8 @@ window.Views = (function () {
   function langPicker() {
     const wrap = el("div", { class: "lang-picker" });
     wrap.appendChild(el("div", { class: "lang-picker-title", text: "Choose a language" }));
-    Object.values(DATA_LANGS).forEach((meta) => {
+    const allowed = Storage.getAllowedLangs();
+    Object.values(DATA_LANGS).filter((m) => allowed.indexOf(m.id) !== -1).forEach((meta) => {
       const item = el("button", { class: "lang-option", onclick: () => {
         Storage.setLang(meta.id);
         UI.closeModal();

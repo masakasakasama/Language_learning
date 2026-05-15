@@ -19,6 +19,7 @@ window.Storage = (function () {
   const KEY = "mochi.v1";
   const SNAP_KEY = "mochi.v1.snapshots";
   const MAX_SNAPSHOTS = 8;
+  const ALL_LANGS = ["ja","ko","en","es","de"];
 
   function defaultLangState() {
     return {
@@ -40,6 +41,7 @@ window.Storage = (function () {
     const de = defaultLangState(); de.trackForTaskManager = false;
     return {
       currentLang: "ja",
+      allowedLangs: ALL_LANGS.slice(),  // which languages this user studies
       languages: {
         ja: defaultLangState(),
         ko: defaultLangState(),
@@ -57,7 +59,8 @@ window.Storage = (function () {
 
   function defaultRoot() {
     const me = defaultProfile();
-    me.currentLang = "en"; // 俺 studies English + German
+    me.currentLang = "en";
+    me.allowedLangs = ["en","de"]; // 俺 studies only English + German
     return {
       schema: 2,
       currentUser: "rebecca",
@@ -111,7 +114,7 @@ window.Storage = (function () {
     if (!obj.userNames.rebecca) obj.userNames.rebecca = "レベッカ";
     if (!obj.userNames.me) obj.userNames.me = "俺";
     if (!obj.users.rebecca) obj.users.rebecca = defaultProfile();
-    if (!obj.users.me) { obj.users.me = defaultProfile(); obj.users.me.currentLang = "en"; }
+    if (!obj.users.me) { obj.users.me = defaultProfile(); obj.users.me.currentLang = "en"; obj.users.me.allowedLangs = ["en","de"]; }
     if (!obj.currentUser || !obj.users[obj.currentUser]) obj.currentUser = "rebecca";
     if (typeof obj.onboarded !== "boolean") obj.onboarded = true;
     obj.theme = obj.theme || "light";
@@ -121,6 +124,16 @@ window.Storage = (function () {
     Object.keys(obj.users).forEach((uid) => {
       const u = obj.users[uid] || (obj.users[uid] = defaultProfile());
       u.currentLang = u.currentLang || "ja";
+      // allowedLangs: 俺 ALWAYS studies only en+de (per user's explicit
+      // request); everyone else all languages.
+      if (uid === "me") {
+        u.allowedLangs = ["en","de"];
+      } else if (!Array.isArray(u.allowedLangs) || !u.allowedLangs.length) {
+        u.allowedLangs = ALL_LANGS.slice();
+      }
+      // If the saved currentLang is no longer allowed, snap to the first
+      // allowed language so the UI never lands on a hidden language.
+      if (u.allowedLangs.indexOf(u.currentLang) === -1) u.currentLang = u.allowedLangs[0];
       u.languages = u.languages || {};
       u.stats = u.stats || { byDate: {} };
       u.streak = u.streak || { current: 0, longest: 0, lastActiveDate: null };
@@ -181,9 +194,20 @@ window.Storage = (function () {
   function getCurrentUser() { return load().currentUser; }
   function setCurrentUser(id) {
     const root = load();
-    if (root.users[id]) { root.currentUser = id; save(); }
+    if (!root.users[id]) return;
+    root.currentUser = id;
+    // Make sure the active language is one this user actually studies.
+    const u = root.users[id];
+    if (Array.isArray(u.allowedLangs) && u.allowedLangs.indexOf(u.currentLang) === -1) {
+      u.currentLang = u.allowedLangs[0];
+    }
+    save();
   }
   function getUserName(id) { return (load().userNames || {})[id] || id; }
+  function getAllowedLangs() {
+    const p = prof();
+    return Array.isArray(p.allowedLangs) && p.allowedLangs.length ? p.allowedLangs : ALL_LANGS.slice();
+  }
 
   let _saveCount = 0;
   function save() {
@@ -522,14 +546,13 @@ window.Storage = (function () {
   }
   function isTracked(lang) { return !!langState(lang).trackForTaskManager; }
   function setTracked(lang, on) { langState(lang).trackForTaskManager = !!on; save(); }
-  const ALL_LANGS = ["ja","ko","en","es","de"];
   function trackedLangs() {
-    return ALL_LANGS.filter((l) => isTracked(l));
+    return getAllowedLangs().filter((l) => isTracked(l));
   }
   function dailyAchievementMap(opts) {
     const onlyTracked = opts && opts.onlyTracked;
     const out = {};
-    const langs = onlyTracked ? trackedLangs() : ALL_LANGS;
+    const langs = onlyTracked ? trackedLangs() : getAllowedLangs();
     langs.forEach((l) => {
       out[l] = {
         cards: todayCardsForLang(l),
@@ -686,7 +709,7 @@ window.Storage = (function () {
 
   return {
     load, save, reload, reset, todayStr,
-    listUsers, getCurrentUser, setCurrentUser, getUserName,
+    listUsers, getCurrentUser, setCurrentUser, getUserName, getAllowedLangs,
     exportData, importData, downloadBackup,
     saveSnapshot, getSnapshots, restoreSnapshot, countCards,
     getLang, setLang, langState,
