@@ -37,13 +37,23 @@ window.Exercises = (function () {
   }
 
   function buildTyping(target) {
+    const word = (target.front || target.jp || "");
+    const acc = new Set();
+    const norm = (s) => (s || "").toLowerCase().trim();
+    if (word) acc.add(norm(word));
+    // accept the word without a leading German article
+    const noArt = word.replace(/^(der|die|das)\s+/i, "");
+    if (noArt) acc.add(norm(noArt));
+    // for JA/KO etc. also accept romaji / kana spellings
+    if (target.romaji) acc.add(norm(target.romaji));
+    if (target.kana) acc.add(norm(target.kana));
     return {
       type: "type",
-      prompt: target.front || target.jp,
+      prompt: target.back || target.en || "",
       hint: target.hint,
       audio: target.speakText,
-      answer: (target.back || target.en || "").toLowerCase().trim(),
-      acceptableAnswers: extractAcceptable(target),
+      answer: word,
+      acceptableAnswers: [...acc].filter(Boolean),
       card: target
     };
   }
@@ -148,7 +158,9 @@ window.Exercises = (function () {
     wrap.appendChild(promptRow);
     if (ex.hint) wrap.appendChild(el("div", { class: "ex-hint", text: ex.hint }));
 
-    const input = el("input", { class: "ex-input", type: "text", placeholder: "Type the meaning…", autocomplete: "off", autocapitalize: "none" });
+    let langName = "";
+    try { langName = (App.getLangMeta() || {}).nativeName || ""; } catch (e) {}
+    const input = el("input", { class: "ex-input", type: "text", placeholder: langName ? `Type it in ${langName}…` : "Type the word…", autocomplete: "off", autocapitalize: "none" });
     wrap.appendChild(input);
 
     const submit = el("button", { class: "btn primary big", text: "Check" });
