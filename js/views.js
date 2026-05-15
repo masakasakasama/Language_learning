@@ -3,7 +3,7 @@ window.Views = (function () {
   const { el, clear, mascot, progressBar, toast, confetti, shuffle, pickN } = UI;
 
   function getLangPack(lang) {
-    return ({ ja: window.DATA_JA, ko: window.DATA_KO, en: window.DATA_EN, es: window.DATA_ES })[lang];
+    return ({ ja: window.DATA_JA, ko: window.DATA_KO, en: window.DATA_EN, es: window.DATA_ES, de: window.DATA_DE })[lang];
   }
   function getLangMeta(lang) { return DATA_LANGS[lang]; }
 
@@ -1438,6 +1438,28 @@ window.Views = (function () {
     UI.modal(wrap);
   }
 
+  function userPicker() {
+    const wrap = el("div", { class: "lang-picker" });
+    wrap.appendChild(el("div", { class: "lang-picker-title", text: "Who's studying?" }));
+    const cur = Storage.getCurrentUser();
+    Storage.listUsers().forEach((u) => {
+      const item = el("button", { class: "lang-option" + (u.id === cur ? " active" : ""), onclick: () => {
+        Storage.setCurrentUser(u.id);
+        UI.closeModal();
+        App.refreshTopbar();
+        App.go("home");
+        UI.toast(u.name + " に切り替えました", "good");
+      }});
+      item.appendChild(el("div", { class: "lang-flag big", text: u.id === "rebecca" ? "🌹" : "🧑" }));
+      item.appendChild(el("div", {}, [
+        el("div", { class: "lang-name", text: u.name }),
+        el("div", { class: "muted small", text: u.id === cur ? "Current" : "Tap to switch" })
+      ]));
+      wrap.appendChild(item);
+    });
+    UI.modal(wrap);
+  }
+
   // ─────────────── ONBOARDING ───────────────
   function onboarding() {
     const wrap = el("div", { class: "lang-picker onboard" });
@@ -1462,5 +1484,5 @@ window.Views = (function () {
     UI.modal(wrap);
   }
 
-  return { home, unit, lesson, review, browse, profile, langPicker, onboarding, refreshSyncPill };
+  return { home, unit, lesson, review, browse, profile, langPicker, userPicker, onboarding, refreshSyncPill };
 })();

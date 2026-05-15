@@ -66,5 +66,22 @@ window.DATA_LANGS = {
       { id: "C1", name: "C1", subtitle: "Advanced",         color: "#f472b6", desc: "Idioms, advanced connectors, nuance." },
       { id: "C2", name: "C2", subtitle: "Maestría",         color: "#c084fc", desc: "Near-native, literature & academia." }
     ]
+  },
+  de: {
+    id: "de",
+    name: "German",
+    nativeName: "Deutsch",
+    flag: "🇩🇪",
+    bcp47: "de-DE",
+    color: "#fcd34d",
+    description: "Learn German — articles, cases, modal verbs, all CEFR levels.",
+    levels: [
+      { id: "A1", name: "A1", subtitle: "Beginner",         color: "#a8e6a3", desc: "Greetings, sein/haben, der/die/das, present tense, ~500 words." },
+      { id: "A2", name: "A2", subtitle: "Elementary",       color: "#7dd3fc", desc: "Accusative case, daily routines, places, ~1000 words." },
+      { id: "B1", name: "B1", subtitle: "Intermediate",     color: "#fcd34d", desc: "Perfekt, dative case, travel, opinions, ~2000 words." },
+      { id: "B2", name: "B2", subtitle: "Upper-Int.",       color: "#fb923c", desc: "Modal verbs, separable verbs, abstract topics." },
+      { id: "C1", name: "C1", subtitle: "Advanced",         color: "#f472b6", desc: "Konjunktiv II, idioms, nuance." },
+      { id: "C2", name: "C2", subtitle: "Meisterschaft",    color: "#c084fc", desc: "Near-native, literature & academia." }
+    ]
   }
 };

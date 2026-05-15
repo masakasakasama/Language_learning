@@ -104,6 +104,17 @@ body.dark .topbar { background: rgba(28, 20, 36, 0.92); }
 }
 .lang-flag { font-size: 18px; }
 .lang-chevron { font-size: 10px; opacity: 0.6; }
+.user-switcher {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 10px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  font-weight: 700; font-size: 13px;
+  border: 1px solid var(--accent);
+  flex-shrink: 0;
+}
+.user-emoji { font-size: 15px; }
 .stats { display: flex; gap: 6px; margin-left: auto; align-items: center; }
 
 .refresh-btn {

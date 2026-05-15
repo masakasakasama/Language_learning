@@ -51,17 +51,76 @@ function setStatus(state, message) {
   window.dispatchEvent(new CustomEvent("mochi:sync-status", { detail: lastStatus }));
 }
 
+// Wrap an old single-user blob into the v2 multi-user shape (everything that
+// existed becomes Rebecca's) so the merger only ever deals with v2.
+function toV2(s) {
+  if (!s || typeof s !== "object") return { users: {} };
+  if (s.users) return s;
+  if (s.languages) {
+    return {
+      schema: 2,
+      currentUser: s.currentUser && s.users ? s.currentUser : "rebecca",
+      userNames: { rebecca: "レベッカ", me: "俺" },
+      users: {
+        rebecca: {
+          currentLang: s.currentLang || "ja",
+          languages: s.languages || {},
+          stats: s.stats || { byDate: {} },
+          streak: s.streak || { current: 0, longest: 0, lastActiveDate: null },
+          xpTotal: s.xpTotal || 0,
+          dailyAchievements: s.dailyAchievements || {},
+          notified: s.notified || {}
+        }
+      },
+      onboarded: s.onboarded !== false,
+      theme: s.theme || "light",
+      webhookUrl: s.webhookUrl || "",
+      writeAt: s.writeAt || 0
+    };
+  }
+  return { users: {}, writeAt: s.writeAt || 0 };
+}
+
 // ─────────────── Smart merge ───────────────
-function mergeStates(local, remote) {
-  if (!local || !Object.keys(local).length) return remote;
-  if (!remote || !Object.keys(remote).length) return local;
+// Top-level: normalise both sides to v2, merge app settings, then merge each
+// user profile independently with mergeProfile().
+function mergeStates(localRaw, remoteRaw) {
+  if (!localRaw || !Object.keys(localRaw).length) return remoteRaw;
+  if (!remoteRaw || !Object.keys(remoteRaw).length) return localRaw;
+  const local = toV2(localRaw);
+  const remote = toV2(remoteRaw);
+  const out = JSON.parse(JSON.stringify(local));
+  out.schema = 2;
+  out.users = out.users || {};
+  out.userNames = Object.assign({ rebecca: "レベッカ", me: "俺" }, local.userNames || {}, remote.userNames || {});
+  const remoteNewer = remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt);
+  out.onboarded = !!(local.onboarded || remote.onboarded);
+  if (remoteNewer) {
+    if (remote.theme) out.theme = remote.theme;
+    if (remote.webhookUrl) out.webhookUrl = remote.webhookUrl;
+    if (remote.currentUser && remote.users && remote.users[remote.currentUser]) out.currentUser = remote.currentUser;
+  }
+  if (!out.currentUser) out.currentUser = local.currentUser || "rebecca";
+
+  const uids = new Set([
+    ...Object.keys(local.users || {}),
+    ...Object.keys(remote.users || {})
+  ]);
+  uids.forEach((uid) => {
+    const lp = (local.users && local.users[uid]) || null;
+    const rp = (remote.users && remote.users[uid]) || null;
+    if (lp && rp) out.users[uid] = mergeProfile(lp, rp, remoteNewer);
+    else out.users[uid] = lp || rp;
+  });
+  return out;
+}
+
+// Merge two profiles (the per-user sub-roots). This is the old top-level
+// merge logic, now scoped to one user.
+function mergeProfile(local, remote, remoteNewer) {
   const out = JSON.parse(JSON.stringify(local));
 
-  if (remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt)) {
-    if (remote.currentLang) out.currentLang = remote.currentLang;
-    if (remote.theme) out.theme = remote.theme;
-  }
-  out.onboarded = !!(local.onboarded || remote.onboarded);
+  if (remoteNewer && remote.currentLang) out.currentLang = remote.currentLang;
 
   out.streak = local.streak || { current: 0, longest: 0, lastActiveDate: null };
   const rs = remote.streak || {};
@@ -98,9 +157,6 @@ function mergeStates(local, remote) {
     });
     out.stats.byDate[d] = merged;
   });
-  if (remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt)) {
-    if (remote.webhookUrl) out.webhookUrl = remote.webhookUrl;
-  }
   out.notified = Object.assign({}, local.notified || {}, remote.notified || {});
 
   out.dailyAchievements = out.dailyAchievements || {};
@@ -154,17 +210,16 @@ function mergeStates(local, remote) {
     const ma = a.marks || {};
     const mb = b.marks || {};
     merged.marks = {};
-    const remoteWins = remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt);
     new Set([...Object.keys(ma), ...Object.keys(mb)]).forEach((id) => {
       if (ma[id] && !mb[id])      merged.marks[id] = ma[id];
       else if (!ma[id] && mb[id]) merged.marks[id] = mb[id];
-      else if (ma[id] && mb[id])  merged.marks[id] = remoteWins ? mb[id] : ma[id];
+      else if (ma[id] && mb[id])  merged.marks[id] = remoteNewer ? mb[id] : ma[id];
     });
 
     merged.xp = Math.max(a.xp || 0, b.xp || 0);
     merged.level = Math.max(a.level || 1, b.level || 1);
     if (typeof b.dailyGoal === "number") {
-      if (typeof a.dailyGoal !== "number" || (remote.writeAt && (!local.writeAt || remote.writeAt > local.writeAt))) {
+      if (typeof a.dailyGoal !== "number" || remoteNewer) {
         merged.dailyGoal = b.dailyGoal;
       } else {
         merged.dailyGoal = a.dailyGoal;

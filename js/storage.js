@@ -33,47 +33,104 @@ window.Storage = (function () {
     };
   }
 
-  function defaultRoot() {
-    // English is off by default for task-manager tracking because the user's
-    // habit tracker only has columns for 日本語/韓国語/スペイン語. They can
-    // toggle it back on from Profile any time.
-    const en = defaultLangState();
-    en.trackForTaskManager = false;
+  // One user's progress. Same shape the WHOLE root used to have before
+  // multi-user — so migration is just "wrap the old root into users.rebecca".
+  function defaultProfile() {
+    const en = defaultLangState(); en.trackForTaskManager = false;
+    const de = defaultLangState(); de.trackForTaskManager = false;
     return {
       currentLang: "ja",
       languages: {
         ja: defaultLangState(),
         ko: defaultLangState(),
         en,
-        es: defaultLangState()
+        es: defaultLangState(),
+        de
       },
       stats: { byDate: {} },
       streak: { current: 0, longest: 0, lastActiveDate: null },
       xpTotal: 0,
-      onboarded: false,
-      theme: "light"
+      dailyAchievements: {},
+      notified: {}
     };
   }
 
-  let cache = null;
+  function defaultRoot() {
+    const me = defaultProfile();
+    me.currentLang = "en"; // 俺 studies English + German
+    return {
+      schema: 2,
+      currentUser: "rebecca",
+      userNames: { rebecca: "レベッカ", me: "俺" },
+      users: {
+        rebecca: defaultProfile(),
+        me: me
+      },
+      onboarded: false,
+      theme: "light",
+      webhookUrl: ""
+    };
+  }
 
-  function load() {
-    if (cache) return cache;
-    try {
-      const raw = localStorage.getItem(KEY);
-      cache = raw ? JSON.parse(raw) : defaultRoot();
-      // Migration / completeness pass for state loaded from older versions.
-      // Fills in fields the user's saved state may not yet have, so toggles
-      // like trackForTaskManager don't silently become false on cards
-      // imported / merged from an earlier schema.
-      cache.languages = cache.languages || {};
-      ["ja","ko","en","es"].forEach((l) => {
-        if (!cache.languages[l]) cache.languages[l] = defaultLangState();
-        const s = cache.languages[l];
-        if (typeof s.trackForTaskManager !== "boolean") {
-          // ja / ko / es default to linked, en default to unlinked
-          s.trackForTaskManager = (l !== "en");
-        }
+  // Normalize ANY shape into the v2 multi-user shape WITHOUT losing data.
+  // - Old single-user root (has .languages, no .users) → wrap into users.rebecca.
+  // - Already v2 → just fill in missing pieces.
+  function migrate(obj) {
+    if (!obj || typeof obj !== "object") return defaultRoot();
+
+    // Old single-user schema → everything that existed becomes Rebecca's.
+    if (obj.languages && !obj.users) {
+      const rebecca = {
+        currentLang: obj.currentLang || "ja",
+        languages: obj.languages || {},
+        stats: obj.stats || { byDate: {} },
+        streak: obj.streak || { current: 0, longest: 0, lastActiveDate: null },
+        xpTotal: obj.xpTotal || 0,
+        dailyAchievements: obj.dailyAchievements || {},
+        notified: obj.notified || {}
+      };
+      const me = defaultProfile(); me.currentLang = "en";
+      obj = {
+        schema: 2,
+        currentUser: "rebecca",
+        userNames: { rebecca: "レベッカ", me: "俺" },
+        users: { rebecca: rebecca, me: me },
+        onboarded: obj.onboarded !== false,   // existing users were onboarded
+        theme: obj.theme || "light",
+        webhookUrl: obj.webhookUrl || ""
+      };
+    }
+
+    if (!obj.users || typeof obj.users !== "object") {
+      // Brand-new / unrecognised → safe default
+      return defaultRoot();
+    }
+
+    obj.schema = 2;
+    obj.userNames = obj.userNames || { rebecca: "レベッカ", me: "俺" };
+    if (!obj.userNames.rebecca) obj.userNames.rebecca = "レベッカ";
+    if (!obj.userNames.me) obj.userNames.me = "俺";
+    if (!obj.users.rebecca) obj.users.rebecca = defaultProfile();
+    if (!obj.users.me) { obj.users.me = defaultProfile(); obj.users.me.currentLang = "en"; }
+    if (!obj.currentUser || !obj.users[obj.currentUser]) obj.currentUser = "rebecca";
+    if (typeof obj.onboarded !== "boolean") obj.onboarded = true;
+    obj.theme = obj.theme || "light";
+    if (typeof obj.webhookUrl !== "string") obj.webhookUrl = obj.webhookUrl || "";
+
+    // Per-user completeness pass
+    Object.keys(obj.users).forEach((uid) => {
+      const u = obj.users[uid] || (obj.users[uid] = defaultProfile());
+      u.currentLang = u.currentLang || "ja";
+      u.languages = u.languages || {};
+      u.stats = u.stats || { byDate: {} };
+      u.streak = u.streak || { current: 0, longest: 0, lastActiveDate: null };
+      if (typeof u.xpTotal !== "number") u.xpTotal = 0;
+      u.dailyAchievements = u.dailyAchievements || {};
+      u.notified = u.notified || {};
+      ["ja","ko","en","es","de"].forEach((l) => {
+        if (!u.languages[l]) u.languages[l] = defaultLangState();
+        const s = u.languages[l];
+        if (typeof s.trackForTaskManager !== "boolean") s.trackForTaskManager = (l !== "en" && l !== "de");
         if (typeof s.dailyGoal !== "number") s.dailyGoal = 20;
         if (!s.cards) s.cards = {};
         if (!s.lessonsCompleted) s.lessonsCompleted = {};
@@ -83,11 +140,50 @@ window.Storage = (function () {
         if (typeof s.xp !== "number") s.xp = 0;
         if (typeof s.level !== "number") s.level = 1;
       });
+    });
+    return obj;
+  }
+
+  let cache = null;
+
+  function load() {
+    if (cache) return cache;
+    try {
+      const raw = localStorage.getItem(KEY);
+      const rawObj = raw ? JSON.parse(raw) : defaultRoot();
+      const wasOldShape = rawObj && rawObj.languages && !rawObj.users;
+      cache = migrate(rawObj);
+      // Persist the migrated v2 shape immediately so localStorage is never
+      // left in the old single-user shape (sync.js reads localStorage
+      // directly and would otherwise re-wrap stale data).
+      if (wasOldShape) {
+        try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (e) {}
+      }
     } catch (e) {
       cache = defaultRoot();
     }
     return cache;
   }
+
+  // The current user's profile (the per-user sub-root). All per-user
+  // accessors go through this; app-wide settings stay on the true root.
+  function prof() {
+    const root = load();
+    if (!root.users) return root; // defensive; migrate() guarantees users
+    return root.users[root.currentUser] || root.users.rebecca || defaultProfile();
+  }
+
+  // ─────────────── User management ───────────────
+  function listUsers() {
+    const root = load();
+    return Object.keys(root.users).map((id) => ({ id, name: (root.userNames || {})[id] || id }));
+  }
+  function getCurrentUser() { return load().currentUser; }
+  function setCurrentUser(id) {
+    const root = load();
+    if (root.users[id]) { root.currentUser = id; save(); }
+  }
+  function getUserName(id) { return (load().userNames || {})[id] || id; }
 
   let _saveCount = 0;
   function save() {
@@ -121,9 +217,18 @@ window.Storage = (function () {
   // against any path that wipes mochi.v1 (sync bug, accidental reset,
   // bad merge), because the user can always Restore from history.
   function countCards(root) {
-    if (!root || !root.languages) return 0;
+    if (!root) return 0;
     let n = 0;
-    Object.values(root.languages).forEach((s) => { n += Object.keys((s && s.cards) || {}).length; });
+    if (root.users) {
+      // v2 multi-user: sum across every user's languages
+      Object.values(root.users).forEach((u) => {
+        Object.values((u && u.languages) || {}).forEach((s) => { n += Object.keys((s && s.cards) || {}).length; });
+      });
+      return n;
+    }
+    if (root.languages) {
+      Object.values(root.languages).forEach((s) => { n += Object.keys((s && s.cards) || {}).length; });
+    }
     return n;
   }
   function getSnapshots() {
@@ -161,7 +266,7 @@ window.Storage = (function () {
     // Take a snapshot of the CURRENT state before overwriting it, in case the
     // restore was a mistake.
     saveSnapshot("before-restore");
-    cache = JSON.parse(JSON.stringify(snaps[idx].data));
+    cache = migrate(JSON.parse(JSON.stringify(snaps[idx].data)));
     try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (e) {}
     window.dispatchEvent(new CustomEvent("mochi:local-changed"));
     return true;
@@ -177,42 +282,45 @@ window.Storage = (function () {
   // Returns { ok: true } / { ok: false, error: "..." }.
   function importData(jsonStr, mergeMode) {
     try {
-      const parsed = JSON.parse(jsonStr);
-      if (!parsed || typeof parsed !== "object" || !parsed.languages) {
+      const parsedRaw = JSON.parse(jsonStr);
+      if (!parsedRaw || typeof parsedRaw !== "object" || (!parsedRaw.languages && !parsedRaw.users)) {
         return { ok: false, error: "File does not look like a mumu backup." };
       }
+      // Normalise the imported blob to v2 (old single-user backups become
+      // users.rebecca — so an old export still restores to Rebecca).
+      const parsed = migrate(parsedRaw);
       if (mergeMode) {
-        // Per-language merge: union cards/learned/lessonsCompleted, max for xp.
-        const cur = load();
-        Object.keys(parsed.languages || {}).forEach((lang) => {
-          const a = cur.languages[lang] || defaultLangState();
-          const b = parsed.languages[lang] || {};
-          a.cards = Object.assign({}, b.cards || {}, a.cards || {});
-          a.learned = Object.assign({}, b.learned || {}, a.learned || {});
-          a.lessonsCompleted = Object.assign({}, b.lessonsCompleted || {}, a.lessonsCompleted || {});
-          a.marks = Object.assign({}, b.marks || {}, a.marks || {});
-          a.xp = Math.max(a.xp || 0, b.xp || 0);
-          a.level = Math.max(a.level || 1, b.level || 1);
-          // Append new custom cards
-          const seen = new Set((a.customCards || []).map((c) => c.id));
-          (b.customCards || []).forEach((c) => { if (c && c.id && !seen.has(c.id)) a.customCards.push(c); });
-          cur.languages[lang] = a;
+        const root = load();
+        Object.keys(parsed.users).forEach((uid) => {
+          const cu = root.users[uid] || (root.users[uid] = defaultProfile());
+          const pu = parsed.users[uid];
+          Object.keys(pu.languages || {}).forEach((lang) => {
+            const a = cu.languages[lang] || (cu.languages[lang] = defaultLangState());
+            const b = pu.languages[lang] || {};
+            a.cards = Object.assign({}, b.cards || {}, a.cards || {});
+            a.learned = Object.assign({}, b.learned || {}, a.learned || {});
+            a.lessonsCompleted = Object.assign({}, b.lessonsCompleted || {}, a.lessonsCompleted || {});
+            a.marks = Object.assign({}, b.marks || {}, a.marks || {});
+            a.xp = Math.max(a.xp || 0, b.xp || 0);
+            a.level = Math.max(a.level || 1, b.level || 1);
+            const seen = new Set((a.customCards || []).map((c) => c.id));
+            (b.customCards || []).forEach((c) => { if (c && c.id && !seen.has(c.id)) a.customCards.push(c); });
+          });
+          Object.keys((pu.stats && pu.stats.byDate) || {}).forEach((d) => {
+            const x = cu.stats.byDate[d] || { mins:0, cards:0, correct:0, lessons:0, xp:0 };
+            const y = pu.stats.byDate[d];
+            cu.stats.byDate[d] = {
+              mins: Math.max(x.mins||0, y.mins||0),
+              cards: Math.max(x.cards||0, y.cards||0),
+              correct: Math.max(x.correct||0, y.correct||0),
+              lessons: Math.max(x.lessons||0, y.lessons||0),
+              xp: Math.max(x.xp||0, y.xp||0)
+            };
+          });
+          if ((pu.streak?.longest || 0) > (cu.streak.longest || 0)) cu.streak.longest = pu.streak.longest;
+          cu.xpTotal = Math.max(cu.xpTotal || 0, pu.xpTotal || 0);
+          cu.dailyAchievements = Object.assign({}, pu.dailyAchievements || {}, cu.dailyAchievements || {});
         });
-        // Merge stats per date — take max of each metric
-        Object.keys(parsed.stats?.byDate || {}).forEach((d) => {
-          const x = cur.stats.byDate[d] || { mins:0, cards:0, correct:0, lessons:0, xp:0 };
-          const y = parsed.stats.byDate[d];
-          cur.stats.byDate[d] = {
-            mins: Math.max(x.mins||0, y.mins||0),
-            cards: Math.max(x.cards||0, y.cards||0),
-            correct: Math.max(x.correct||0, y.correct||0),
-            lessons: Math.max(x.lessons||0, y.lessons||0),
-            xp: Math.max(x.xp||0, y.xp||0)
-          };
-        });
-        // Streak: keep the longer
-        if ((parsed.streak?.longest || 0) > (cur.streak.longest || 0)) cur.streak.longest = parsed.streak.longest;
-        cur.xpTotal = Math.max(cur.xpTotal || 0, parsed.xpTotal || 0);
       } else {
         cache = parsed;
       }
@@ -242,10 +350,15 @@ window.Storage = (function () {
     return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
   }
 
-  function getLang() { return load().currentLang; }
-  function setLang(l) { load().currentLang = l; save(); }
+  function getLang() { return prof().currentLang; }
+  function setLang(l) { prof().currentLang = l; save(); }
 
-  function langState(l) { return load().languages[l || getLang()]; }
+  function langState(l) {
+    const p = prof();
+    const code = l || p.currentLang;
+    if (!p.languages[code]) p.languages[code] = defaultLangState();
+    return p.languages[code];
+  }
 
   function getCard(cardId, lang) {
     return langState(lang).cards[cardId];
@@ -363,22 +476,22 @@ window.Storage = (function () {
 
   // XP and stats
   function addXP(amount, lang) {
-    const root = load();
+    const p = prof();
     langState(lang).xp += amount;
-    root.xpTotal += amount;
+    p.xpTotal += amount;
     save();
   }
 
   function recordStudyTime(seconds) {
-    const root = load();
+    const p = prof();
     const day = todayStr();
-    if (!root.stats.byDate[day]) root.stats.byDate[day] = { mins: 0, cards: 0, correct: 0, lessons: 0, xp: 0 };
-    root.stats.byDate[day].mins += seconds / 60;
+    if (!p.stats.byDate[day]) p.stats.byDate[day] = { mins: 0, cards: 0, correct: 0, lessons: 0, xp: 0 };
+    p.stats.byDate[day].mins += seconds / 60;
     save();
   }
 
   function recordCard(correct, xp, lang) {
-    const root = load();
+    const root = prof();
     const day = todayStr();
     const L = lang || getLang();
     if (!root.stats.byDate[day]) root.stats.byDate[day] = { mins: 0, cards: 0, correct: 0, lessons: 0, xp: 0, byLang: {} };
@@ -401,8 +514,7 @@ window.Storage = (function () {
   function getDailyGoal(lang) { return (langState(lang).dailyGoal ?? 20); }
   function setDailyGoal(lang, n) { langState(lang).dailyGoal = Math.max(1, n|0); save(); }
   function todayCardsForLang(lang) {
-    const root = load();
-    const today = root.stats.byDate[todayStr()];
+    const today = prof().stats.byDate[todayStr()];
     return today?.byLang?.[lang]?.cards || 0;
   }
   function isDailyAchieved(lang) {
@@ -410,13 +522,14 @@ window.Storage = (function () {
   }
   function isTracked(lang) { return !!langState(lang).trackForTaskManager; }
   function setTracked(lang, on) { langState(lang).trackForTaskManager = !!on; save(); }
+  const ALL_LANGS = ["ja","ko","en","es","de"];
   function trackedLangs() {
-    return ["ja","ko","en","es"].filter((l) => isTracked(l));
+    return ALL_LANGS.filter((l) => isTracked(l));
   }
   function dailyAchievementMap(opts) {
     const onlyTracked = opts && opts.onlyTracked;
     const out = {};
-    const langs = onlyTracked ? trackedLangs() : ["ja","ko","en","es"];
+    const langs = onlyTracked ? trackedLangs() : ALL_LANGS;
     langs.forEach((l) => {
       out[l] = {
         cards: todayCardsForLang(l),
@@ -431,13 +544,13 @@ window.Storage = (function () {
   // Track which (date, language) tuples have already triggered today's
   // notification so we don't fire the webhook twice.
   function wasNotifiedToday(lang) {
-    const root = load();
-    return !!(root.notified || {})[todayStr() + ":" + lang];
+    const p = prof();
+    return !!(p.notified || {})[todayStr() + ":" + lang];
   }
   function markNotified(lang) {
-    const root = load();
-    root.notified = root.notified || {};
-    root.notified[todayStr() + ":" + lang] = true;
+    const p = prof();
+    p.notified = p.notified || {};
+    p.notified[todayStr() + ":" + lang] = true;
     save();
   }
 
@@ -454,11 +567,11 @@ window.Storage = (function () {
   // the same sync code can read it at sync/{code}/state/main.dailyAchievements.
   // Schema: { "YYYY-MM-DD": { ja:{achieved,cards,goal,at}, ko:{...}, ... } }
   function recordDailyAchievementInState(lang) {
-    const root = load();
+    const p = prof();
     const day = todayStr();
-    root.dailyAchievements = root.dailyAchievements || {};
-    root.dailyAchievements[day] = root.dailyAchievements[day] || {};
-    root.dailyAchievements[day][lang] = {
+    p.dailyAchievements = p.dailyAchievements || {};
+    p.dailyAchievements[day] = p.dailyAchievements[day] || {};
+    p.dailyAchievements[day][lang] = {
       achieved: true,
       cards: todayCardsForLang(lang),
       goal: getDailyGoal(lang),
@@ -466,9 +579,9 @@ window.Storage = (function () {
     };
     save();
   }
-  function getDailyAchievementsAll() { return load().dailyAchievements || {}; }
+  function getDailyAchievementsAll() { return prof().dailyAchievements || {}; }
   function getDailyAchievementsForDate(date) {
-    return (load().dailyAchievements || {})[date] || {};
+    return (prof().dailyAchievements || {})[date] || {};
   }
 
   // Called from recordCard. If the user just crossed today's per-language
@@ -504,16 +617,16 @@ window.Storage = (function () {
   }
 
   function recordLesson(xp) {
-    const root = load();
+    const p = prof();
     const day = todayStr();
-    if (!root.stats.byDate[day]) root.stats.byDate[day] = { mins: 0, cards: 0, correct: 0, lessons: 0, xp: 0 };
-    root.stats.byDate[day].lessons += 1;
-    if (xp) root.stats.byDate[day].xp += xp;
+    if (!p.stats.byDate[day]) p.stats.byDate[day] = { mins: 0, cards: 0, correct: 0, lessons: 0, xp: 0 };
+    p.stats.byDate[day].lessons += 1;
+    if (xp) p.stats.byDate[day].xp += xp;
     save();
   }
 
   function bumpStreak() {
-    const root = load();
+    const root = prof();
     const day = todayStr();
     if (root.streak.lastActiveDate === day) return root.streak; // already counted today
     if (!root.streak.lastActiveDate) {
@@ -532,12 +645,12 @@ window.Storage = (function () {
     return root.streak;
   }
 
-  function getStats() { return load().stats; }
-  function getStreak() { return load().streak; }
-  function getXPTotal() { return load().xpTotal; }
+  function getStats() { return prof().stats; }
+  function getStreak() { return prof().streak; }
+  function getXPTotal() { return prof().xpTotal; }
 
   function getStatsForRange(days) {
-    const root = load();
+    const root = prof();
     const out = [];
     const today = new Date();
     for (let i = days - 1; i >= 0; i--) {
@@ -551,7 +664,7 @@ window.Storage = (function () {
   }
 
   function getCumulativeStats() {
-    const root = load();
+    const root = prof();
     let totalMins = 0, totalCards = 0, totalCorrect = 0, totalLessons = 0, totalXp = 0, daysActive = 0;
     Object.values(root.stats.byDate).forEach((s) => {
       totalMins += s.mins; totalCards += s.cards; totalCorrect += s.correct;
@@ -562,8 +675,7 @@ window.Storage = (function () {
   }
 
   function todayStats() {
-    const root = load();
-    return root.stats.byDate[todayStr()] || { mins:0, cards:0, correct:0, lessons:0, xp:0 };
+    return prof().stats.byDate[todayStr()] || { mins:0, cards:0, correct:0, lessons:0, xp:0 };
   }
 
   function setOnboarded() { load().onboarded = true; save(); }
@@ -574,6 +686,7 @@ window.Storage = (function () {
 
   return {
     load, save, reload, reset, todayStr,
+    listUsers, getCurrentUser, setCurrentUser, getUserName,
     exportData, importData, downloadBackup,
     saveSnapshot, getSnapshots, restoreSnapshot, countCards,
     getLang, setLang, langState,

@@ -6,7 +6,7 @@ window.App = (function () {
   let sessionStartTs = Date.now();
 
   function getLangPack(lang) {
-    return ({ ja: window.DATA_JA, ko: window.DATA_KO, en: window.DATA_EN, es: window.DATA_ES })[lang || Storage.getLang()];
+    return ({ ja: window.DATA_JA, ko: window.DATA_KO, en: window.DATA_EN, es: window.DATA_ES, de: window.DATA_DE })[lang || Storage.getLang()];
   }
   function getLangMeta(lang) { return DATA_LANGS[lang || Storage.getLang()]; }
 
@@ -50,6 +50,8 @@ window.App = (function () {
     const pack = getLangPack(lang);
     document.getElementById("lang-flag").textContent = meta.flag;
     document.getElementById("lang-name").textContent = meta.nativeName;
+    const un = document.getElementById("user-name");
+    if (un) un.textContent = Storage.getUserName(Storage.getCurrentUser());
     document.getElementById("stat-streak").textContent = Storage.getStreak().current;
     document.getElementById("stat-xp").textContent = Storage.langState(lang).xp;
     const due = SRS.countDue(allCards(lang), lang);
@@ -128,6 +130,8 @@ window.App = (function () {
     });
     document.querySelector(".logo-btn").addEventListener("click", () => go("home"));
     document.getElementById("lang-switcher").addEventListener("click", () => Views.langPicker());
+    const us = document.getElementById("user-switcher");
+    if (us) us.addEventListener("click", () => Views.userPicker());
     const refreshBtn = document.getElementById("refresh-btn");
     if (refreshBtn) refreshBtn.addEventListener("click", refreshNow);
 
