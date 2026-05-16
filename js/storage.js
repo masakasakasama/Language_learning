@@ -701,6 +701,23 @@ window.Storage = (function () {
     return prof().stats.byDate[todayStr()] || { mins:0, cards:0, correct:0, lessons:0, xp:0 };
   }
 
+  // Every (date, lang) the current user studied at all, with how many
+  // cards and that language's goal. Used by the task-manager bridge to
+  // backfill past days as graded progress.
+  function studyHistory() {
+    const out = [];
+    const byDate = (prof().stats && prof().stats.byDate) || {};
+    Object.keys(byDate).forEach((date) => {
+      const bl = byDate[date] && byDate[date].byLang;
+      if (!bl) return;
+      Object.keys(bl).forEach((lang) => {
+        const cards = (bl[lang] && bl[lang].cards) || 0;
+        if (cards > 0) out.push({ date, lang, cards, goal: getDailyGoal(lang) });
+      });
+    });
+    return out;
+  }
+
   function setOnboarded() { load().onboarded = true; save(); }
   function isOnboarded() { return !!load().onboarded; }
 
@@ -724,7 +741,7 @@ window.Storage = (function () {
     lessonDone, markLessonDone,
     addXP, recordStudyTime, recordCard, recordLesson,
     bumpStreak, getStats, getStreak, getXPTotal,
-    getStatsForRange, getCumulativeStats, todayStats,
+    getStatsForRange, getCumulativeStats, todayStats, studyHistory,
     setOnboarded, isOnboarded, setTheme, getTheme
   };
 })();

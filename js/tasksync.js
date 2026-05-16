@@ -77,12 +77,40 @@ export async function notifyTaskManager(mumuUser, language, dateKey, percent = 1
   }
 }
 
+// mumu language code → name understood by LANG_TO_HABIT
+const LANG_NAME = { de: "German", en: "English", ja: "Japanese", ko: "Korean", es: "Spanish" };
+
 // Auto-wire: mumu fires this when a per-language daily goal is reached.
 window.addEventListener("mumu:daily-achieved", (e) => {
   const d = (e && e.detail) || {};
   if (!d.achieved) return;
   let mumuUser = "";
   try { mumuUser = window.Storage.getUserName(window.Storage.getCurrentUser()); } catch (err) {}
-  const language = d.languageName || d.language;
+  const language = d.languageName || LANG_NAME[d.language] || d.language;
   notifyTaskManager(mumuUser, language, d.date, 100);
 });
+
+// Backfill: the bridge is new, so days the user already completed before
+// it existed were never pushed. On load, replay every achieved day.
+// notifyTaskManager is idempotent (won't lower a higher manual value and
+// re-sending 100 is a no-op), so this is safe to run every time.
+// cards/goal → one of the tracker's levels: 20/40/60/80/100
+function gradedPercent(cards, goal) {
+  const ratio = cards / Math.max(1, goal);
+  const pct = Math.round(ratio * 5) * 20;     // snap to 20s
+  return Math.min(100, Math.max(20, pct));    // studied at all ⇒ ≥20
+}
+
+async function backfill() {
+  try {
+    const S = window.Storage;
+    if (!S || !S.studyHistory) return;
+    const mumuUser = S.getUserName(S.getCurrentUser());
+    const days = S.studyHistory();
+    for (const { date, lang, cards, goal } of days) {
+      const language = LANG_NAME[lang] || lang;
+      await notifyTaskManager(mumuUser, language, date, gradedPercent(cards, goal));
+    }
+  } catch (e) { console.warn("[tasksync] backfill error:", e); }
+}
+window.addEventListener("load", () => setTimeout(backfill, 2500));
