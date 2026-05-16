@@ -409,11 +409,13 @@ window.DATA_DE = (function () {
     {
       id: "de-g-sein", level: "A1",
       title: "sein / haben — to be / to have",
+      titleJa: "sein / haben — 「〜である」「持っている」",
       intro: "<b>sein</b> conjugates ich bin, du bist, er/sie/es ist, wir sind, ihr seid, sie sind.<br><b>haben</b>: ich habe, du hast, er hat, wir haben, ihr habt, sie haben.",
+      introJa: "<b>sein</b>（〜である）の活用: ich bin / du bist / er・sie・es ist / wir sind / ihr seid / sie sind。<br><b>haben</b>（持っている）: ich habe / du hast / er hat / wir haben / ihr habt / sie haben。主語に合わせて形が変わるよ。",
       examples: [
-        { jp: "Ich bin Student.", en: "I am a student.", de: "" },
-        { jp: "Sie ist müde.", en: "She is tired.", de: "" },
-        { jp: "Wir haben Zeit.", en: "We have time.", de: "" }
+        { jp: "Ich bin Student.", en: "I am a student.", ja: "私は学生です。", de: "" },
+        { jp: "Sie ist müde.", en: "She is tired.", ja: "彼女は疲れています。", de: "" },
+        { jp: "Wir haben Zeit.", en: "We have time.", ja: "私たちは時間があります。", de: "" }
       ],
       quiz: [
         { type: "mc", q: "Du ___ nett.", choices: ["bin","bist","ist","sind"], answer: "bist" },
@@ -423,11 +425,13 @@ window.DATA_DE = (function () {
     {
       id: "de-g-articles", level: "A1",
       title: "der / die / das — gendered articles",
+      titleJa: "der / die / das — 名詞の性（冠詞）",
       intro: "Every German noun has a gender: <b>der</b> (m), <b>die</b> (f), <b>das</b> (n). Plurals always use <b>die</b>.",
+      introJa: "ドイツ語の名詞には性があるよ。<b>der</b>＝男性、<b>die</b>＝女性、<b>das</b>＝中性。複数形はいつも <b>die</b> を使う。名詞は冠詞とセットで覚えよう。",
       examples: [
-        { jp: "der Mann", en: "the man (m)", de: "" },
-        { jp: "die Frau", en: "the woman (f)", de: "" },
-        { jp: "das Kind", en: "the child (n)", de: "" }
+        { jp: "der Mann", en: "the man (m)", ja: "その男性（男性名詞）", de: "" },
+        { jp: "die Frau", en: "the woman (f)", ja: "その女性（女性名詞）", de: "" },
+        { jp: "das Kind", en: "the child (n)", ja: "その子ども（中性名詞）", de: "" }
       ],
       quiz: [
         { type: "mc", q: "___ Apfel (m)", choices: ["der","die","das","den"], answer: "der" },
@@ -437,10 +441,12 @@ window.DATA_DE = (function () {
     {
       id: "de-g-present", level: "A1",
       title: "Present tense (regular verbs)",
+      titleJa: "現在形（規則動詞）",
       intro: "Drop -en, add: <b>-e, -st, -t, -en, -t, -en</b>. machen → ich mache, du machst, er macht …",
+      introJa: "語尾の -en を取って、主語に合わせて <b>-e / -st / -t / -en / -t / -en</b> を付けるよ。例: machen → ich mache、du machst、er macht …",
       examples: [
-        { jp: "Ich spiele Fußball.", en: "I play football.", de: "" },
-        { jp: "Du lernst Deutsch.", en: "You learn German.", de: "" }
+        { jp: "Ich spiele Fußball.", en: "I play football.", ja: "私はサッカーをします。", de: "" },
+        { jp: "Du lernst Deutsch.", en: "You learn German.", ja: "きみはドイツ語を勉強しています。", de: "" }
       ],
       quiz: [
         { type: "mc", q: "Er ___ (kommen).", choices: ["komme","kommst","kommt","kommen"], answer: "kommt" }
@@ -449,10 +455,12 @@ window.DATA_DE = (function () {
     {
       id: "de-g-akkusativ", level: "A2",
       title: "Accusative case",
+      titleJa: "4格（対格・直接目的語）",
       intro: "The direct object takes the accusative. Masculine <b>der → den</b>; die/das/plural stay the same.",
+      introJa: "直接目的語（〜を）は4格になるよ。男性名詞だけ <b>der → den</b> に変化。女性・中性・複数は形が変わらない。",
       examples: [
-        { jp: "Ich sehe den Mann.", en: "I see the man.", de: "" },
-        { jp: "Sie kauft einen Apfel.", en: "She buys an apple.", de: "" }
+        { jp: "Ich sehe den Mann.", en: "I see the man.", ja: "私はその男性を見ます。", de: "" },
+        { jp: "Sie kauft einen Apfel.", en: "She buys an apple.", ja: "彼女はりんごを1つ買います。", de: "" }
       ],
       quiz: [
         { type: "mc", q: "Ich habe ___ Hund (m).", choices: ["einen","ein","eine","einem"], answer: "einen" }
@@ -461,10 +469,12 @@ window.DATA_DE = (function () {
     {
       id: "de-g-perfekt", level: "B1",
       title: "Perfekt (past tense)",
+      titleJa: "現在完了（話し言葉の過去）",
       intro: "Spoken past = <b>haben/sein + Partizip II</b>. gemacht, gegangen, gesehen … Motion/change verbs use <b>sein</b>.",
+      introJa: "話し言葉の過去は <b>haben か sein ＋ 過去分詞</b>。例: gemacht / gegangen / gesehen …。移動・状態変化の動詞は <b>sein</b> を使うよ。",
       examples: [
-        { jp: "Ich habe gegessen.", en: "I have eaten / I ate.", de: "" },
-        { jp: "Er ist gegangen.", en: "He has gone / he went.", de: "" }
+        { jp: "Ich habe gegessen.", en: "I have eaten / I ate.", ja: "私は食べました。", de: "" },
+        { jp: "Er ist gegangen.", en: "He has gone / he went.", ja: "彼は行きました。", de: "" }
       ],
       quiz: [
         { type: "mc", q: "Wir ___ nach Berlin gefahren.", choices: ["sind","haben","ist","hat"], answer: "sind" }
@@ -473,10 +483,12 @@ window.DATA_DE = (function () {
     {
       id: "de-g-dativ", level: "B1",
       title: "Dative case",
+      titleJa: "3格（与格・間接目的語）",
       intro: "Indirect object / after certain prepositions (mit, nach, aus, bei, von, zu). der→dem, die→der, das→dem, plural→den (+n).",
+      introJa: "間接目的語（〜に）や特定の前置詞（mit, nach, aus, bei, von, zu）の後で使うよ。冠詞の変化: der→dem、die→der、das→dem、複数→den（名詞に -n も付く）。",
       examples: [
-        { jp: "Ich gebe dem Kind das Buch.", en: "I give the child the book.", de: "" },
-        { jp: "Sie fährt mit dem Bus.", en: "She goes by bus.", de: "" }
+        { jp: "Ich gebe dem Kind das Buch.", en: "I give the child the book.", ja: "私はその子どもに本をあげます。", de: "" },
+        { jp: "Sie fährt mit dem Bus.", en: "She goes by bus.", ja: "彼女はバスで行きます。", de: "" }
       ],
       quiz: [
         { type: "mc", q: "Ich helfe ___ Frau (f).", choices: ["der","die","dem","den"], answer: "der" }
@@ -485,10 +497,12 @@ window.DATA_DE = (function () {
     {
       id: "de-g-modal", level: "B2",
       title: "Modal verbs",
+      titleJa: "話法の助動詞（modal verbs）",
       intro: "können, müssen, wollen, sollen, dürfen, mögen. Modal conjugated, main verb infinitive at the end.",
+      introJa: "können（〜できる）, müssen（〜しなければ）, wollen（〜したい）, sollen（〜すべき）, dürfen（〜してよい）, mögen（好き）。助動詞を活用させ、本動詞は原形で文末に置くよ。",
       examples: [
-        { jp: "Ich kann schwimmen.", en: "I can swim.", de: "" },
-        { jp: "Du musst lernen.", en: "You have to study.", de: "" }
+        { jp: "Ich kann schwimmen.", en: "I can swim.", ja: "私は泳げます。", de: "" },
+        { jp: "Du musst lernen.", en: "You have to study.", ja: "きみは勉強しなければなりません。", de: "" }
       ],
       quiz: [
         { type: "mc", q: "Wir ___ heute arbeiten.", choices: ["müssen","muss","musst","müsst"], answer: "müssen" }
@@ -497,10 +511,12 @@ window.DATA_DE = (function () {
     {
       id: "de-g-konjunktiv", level: "C1",
       title: "Konjunktiv II (would / hypothetical)",
+      titleJa: "接続法第2式（仮定・丁寧）",
       intro: "Polite / unreal: <b>würde + Infinitiv</b>, or hätte/wäre/könnte. „Ich würde gern…“",
+      introJa: "丁寧な言い方や非現実の仮定に使うよ。<b>würde ＋ 動詞の原形</b>、または hätte / wäre / könnte。例:「Ich würde gern…（〜したいのですが）」。",
       examples: [
-        { jp: "Ich würde gern kommen.", en: "I would like to come.", de: "" },
-        { jp: "Wenn ich Zeit hätte, …", en: "If I had time, …", de: "" }
+        { jp: "Ich würde gern kommen.", en: "I would like to come.", ja: "できれば行きたいのですが。", de: "" },
+        { jp: "Wenn ich Zeit hätte, …", en: "If I had time, …", ja: "もし時間があれば、…", de: "" }
       ],
       quiz: [
         { type: "mc", q: "Ich ___ gern einen Kaffee.", choices: ["würde","wurde","werde","worden"], answer: "würde" }

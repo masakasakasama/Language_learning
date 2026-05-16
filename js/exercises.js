@@ -274,11 +274,15 @@ window.Exercises = (function () {
   // Grammar card renderer
   function renderGrammar(grammar, container, onContinue) {
     clear(container);
+    let me = false;
+    try { me = window.Storage && Storage.getCurrentUser() === "me"; } catch (e) {}
+    const title = me && grammar.titleJa ? grammar.titleJa : grammar.title;
+    const intro = me && grammar.introJa ? grammar.introJa : grammar.intro;
     const wrap = el("div", { class: "ex ex-grammar" });
-    wrap.appendChild(el("div", { class: "grammar-title", text: grammar.title }));
-    wrap.appendChild(el("div", { class: "grammar-intro", html: grammar.intro.replace(/\n/g, "<br>") }));
+    wrap.appendChild(el("div", { class: "grammar-title", text: title }));
+    wrap.appendChild(el("div", { class: "grammar-intro", html: intro.replace(/\n/g, "<br>") }));
 
-    const exTitle = el("div", { class: "grammar-ex-title", text: "Examples" });
+    const exTitle = el("div", { class: "grammar-ex-title", text: me ? "例文" : "Examples" });
     wrap.appendChild(exTitle);
     grammar.examples.forEach((e) => {
       const item = el("div", { class: "grammar-ex" });
@@ -287,7 +291,7 @@ window.Exercises = (function () {
         el("button", { class: "btn ghost tiny", onclick: () => App.speak(e.jp) }, ["🔊"])
       ]);
       item.appendChild(row);
-      item.appendChild(el("div", { class: "grammar-ex-en", text: e.en }));
+      item.appendChild(el("div", { class: "grammar-ex-en", text: me && e.ja ? e.ja : e.en }));
       if (e.de) item.appendChild(el("div", { class: "grammar-ex-en tr-de", text: e.de }));
       if (e.breakdown) item.appendChild(el("div", { class: "grammar-ex-bd", text: e.breakdown }));
       wrap.appendChild(item);

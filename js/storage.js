@@ -20,6 +20,15 @@ window.Storage = (function () {
   const SNAP_KEY = "mochi.v1.snapshots";
   const MAX_SNAPSHOTS = 8;
   const ALL_LANGS = ["ja","ko","en","es","de","zh"];
+  // Per-user study languages. レベッカ is a native German speaker so she
+  // doesn't study German; 俺 only studies English + German.
+  const REBECCA_LANGS = ["ja","ko","en","es","zh"];
+  const ME_LANGS = ["en","de"];
+  function allowedFor(uid) {
+    if (uid === "me") return ME_LANGS.slice();
+    if (uid === "rebecca") return REBECCA_LANGS.slice();
+    return ALL_LANGS.slice();
+  }
 
   function defaultLangState() {
     return {
@@ -61,13 +70,16 @@ window.Storage = (function () {
   function defaultRoot() {
     const me = defaultProfile();
     me.currentLang = "en";
-    me.allowedLangs = ["en","de"]; // 俺 studies only English + German
+    me.allowedLangs = allowedFor("me"); // 俺: English + German
+    const rebecca = defaultProfile();
+    rebecca.allowedLangs = allowedFor("rebecca"); // レベッカ: no German (native)
+    rebecca.currentLang = "ja";
     return {
       schema: 2,
       currentUser: "rebecca",
       userNames: { rebecca: "レベッカ", me: "俺" },
       users: {
-        rebecca: defaultProfile(),
+        rebecca: rebecca,
         me: me
       },
       onboarded: false,
@@ -125,14 +137,9 @@ window.Storage = (function () {
     Object.keys(obj.users).forEach((uid) => {
       const u = obj.users[uid] || (obj.users[uid] = defaultProfile());
       u.currentLang = u.currentLang || "ja";
-      // allowedLangs: 俺 ALWAYS studies only en+de (per user's explicit
-      // request); everyone else all languages.
-      if (uid === "me") {
-        u.allowedLangs = ["en","de"];
-      } else {
-        // Everyone except 俺 studies every language (incl. newly added ones).
-        u.allowedLangs = ALL_LANGS.slice();
-      }
+      // allowedLangs is fixed per user: 俺 = en+de, レベッカ = all but
+      // German (native speaker), others = all.
+      u.allowedLangs = allowedFor(uid);
       // If the saved currentLang is no longer allowed, snap to the first
       // allowed language so the UI never lands on a hidden language.
       if (u.allowedLangs.indexOf(u.currentLang) === -1) u.currentLang = u.allowedLangs[0];
