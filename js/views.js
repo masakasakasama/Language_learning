@@ -3,7 +3,7 @@ window.Views = (function () {
   const { el, clear, mascot, progressBar, toast, confetti, shuffle, pickN } = UI;
 
   function getLangPack(lang) {
-    return ({ ja: window.DATA_JA, ko: window.DATA_KO, en: window.DATA_EN, es: window.DATA_ES, de: window.DATA_DE })[lang];
+    return ({ ja: window.DATA_JA, ko: window.DATA_KO, en: window.DATA_EN, es: window.DATA_ES, de: window.DATA_DE, zh: window.DATA_ZH })[lang];
   }
   function getLangMeta(lang) { return DATA_LANGS[lang]; }
 

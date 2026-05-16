@@ -6,7 +6,7 @@ window.App = (function () {
   let sessionStartTs = Date.now();
 
   function getLangPack(lang) {
-    return ({ ja: window.DATA_JA, ko: window.DATA_KO, en: window.DATA_EN, es: window.DATA_ES, de: window.DATA_DE })[lang || Storage.getLang()];
+    return ({ ja: window.DATA_JA, ko: window.DATA_KO, en: window.DATA_EN, es: window.DATA_ES, de: window.DATA_DE, zh: window.DATA_ZH })[lang || Storage.getLang()];
   }
   function getLangMeta(lang) { return DATA_LANGS[lang || Storage.getLang()]; }
 

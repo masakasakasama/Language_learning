@@ -83,5 +83,22 @@ window.DATA_LANGS = {
       { id: "C1", name: "C1", subtitle: "Advanced",         color: "#f472b6", desc: "Konjunktiv II, idioms, nuance." },
       { id: "C2", name: "C2", subtitle: "Meisterschaft",    color: "#c084fc", desc: "Near-native, literature & academia." }
     ]
+  },
+  zh: {
+    id: "zh",
+    name: "Chinese",
+    nativeName: "中文",
+    flag: "🇨🇳",
+    bcp47: "zh-CN",
+    color: "#fca5a5",
+    description: "Learn Mandarin Chinese — pinyin, characters & HSK 1–6, beginner-friendly.",
+    levels: [
+      { id: "HSK1", name: "HSK 1", subtitle: "Beginner",      color: "#a8e6a3", desc: "Pinyin, greetings, numbers, ~150 words, simple sentences." },
+      { id: "HSK2", name: "HSK 2", subtitle: "High Beginner", color: "#7dd3fc", desc: "Daily life, 了, measure words, ~300 words." },
+      { id: "HSK3", name: "HSK 3", subtitle: "Intermediate",  color: "#fcd34d", desc: "Everyday topics, ~600 words, longer sentences." },
+      { id: "HSK4", name: "HSK 4", subtitle: "Upper-Int.",    color: "#fb923c", desc: "Abstract topics, ~1200 words, news basics." },
+      { id: "HSK5", name: "HSK 5", subtitle: "Advanced",      color: "#f472b6", desc: "Media & opinions, ~2500 words." },
+      { id: "HSK6", name: "HSK 6", subtitle: "Mastery",       color: "#c084fc", desc: "Near-native: idioms, literature, ~5000+ words." }
+    ]
   }
 };

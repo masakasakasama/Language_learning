@@ -19,7 +19,7 @@ window.Storage = (function () {
   const KEY = "mochi.v1";
   const SNAP_KEY = "mochi.v1.snapshots";
   const MAX_SNAPSHOTS = 8;
-  const ALL_LANGS = ["ja","ko","en","es","de"];
+  const ALL_LANGS = ["ja","ko","en","es","de","zh"];
 
   function defaultLangState() {
     return {
@@ -47,7 +47,8 @@ window.Storage = (function () {
         ko: defaultLangState(),
         en,
         es: defaultLangState(),
-        de
+        de,
+        zh: defaultLangState()
       },
       stats: { byDate: {} },
       streak: { current: 0, longest: 0, lastActiveDate: null },
@@ -128,7 +129,8 @@ window.Storage = (function () {
       // request); everyone else all languages.
       if (uid === "me") {
         u.allowedLangs = ["en","de"];
-      } else if (!Array.isArray(u.allowedLangs) || !u.allowedLangs.length) {
+      } else {
+        // Everyone except 俺 studies every language (incl. newly added ones).
         u.allowedLangs = ALL_LANGS.slice();
       }
       // If the saved currentLang is no longer allowed, snap to the first
@@ -140,7 +142,7 @@ window.Storage = (function () {
       if (typeof u.xpTotal !== "number") u.xpTotal = 0;
       u.dailyAchievements = u.dailyAchievements || {};
       u.notified = u.notified || {};
-      ["ja","ko","en","es","de"].forEach((l) => {
+      ALL_LANGS.forEach((l) => {
         if (!u.languages[l]) u.languages[l] = defaultLangState();
         const s = u.languages[l];
         if (typeof s.trackForTaskManager !== "boolean") s.trackForTaskManager = (l !== "en" && l !== "de");
