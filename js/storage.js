@@ -622,7 +622,7 @@ window.Storage = (function () {
       source: "mumu",
       date: todayStr(),
       language: lang,
-      languageName: ({ja:"Japanese",ko:"Korean",en:"English",es:"Spanish"})[lang] || lang,
+      languageName: ({ja:"Japanese",ko:"Korean",en:"English",es:"Spanish",de:"German"})[lang] || lang,
       cardsToday: todayCardsForLang(lang),
       goal: getDailyGoal(lang),
       achieved: true,
