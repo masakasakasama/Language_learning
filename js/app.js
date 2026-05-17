@@ -215,6 +215,16 @@ window.App = (function () {
     const refreshBtn = document.getElementById("refresh-btn");
     if (refreshBtn) refreshBtn.addEventListener("click", refreshNow);
 
+    // Tap the version tag to check which speech voice is active — lets
+    // you confirm the iOS Enhanced/Premium voice is being used.
+    const vtag = document.getElementById("version-tag");
+    if (vtag) vtag.addEventListener("click", () => {
+      const name = (window.Audio && Audio.activeVoiceName) ? Audio.activeVoiceName("ja-JP") : "?";
+      const tap = () => Audio.speak("これは音声テストです。", "ja-JP");
+      UI.toast("🔊 Voice: " + name + " (tap again to test)", "good");
+      tap();
+    });
+
     // Track real user interaction so idle/background time isn't counted
     ["pointerdown", "keydown", "touchstart"].forEach((ev) =>
       window.addEventListener(ev, bumpActivity, { passive: true }));
