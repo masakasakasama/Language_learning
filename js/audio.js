@@ -14,18 +14,41 @@ window.Audio = (function () {
     speechSynthesis.onvoiceschanged = loadVoices;
   }
 
+  // Higher = more natural. Cloud/neural/premium voices win.
+  function voiceScore(v) {
+    let s = 0;
+    const n = v.name || "";
+    if (/neural|natural|premium|enhanced|wavenet|siri/i.test(n)) s += 60;
+    if (/Google/i.test(n)) s += 35;
+    if (/Microsoft/i.test(n)) s += 22;
+    // Known good per-language native voices
+    if (/Kyoko|Otoya|O-ren|Hattori|Ayumi|Sora|Nanami|Keita|Mizuki|Yuna|Heami|Sun-Hi|Huihui|Xiaoxiao|Yunyang|Tingting|Sin-?ji/i.test(n)) s += 28;
+    if (v.localService === false) s += 18; // online voices are usually richer
+    if (v.default) s += 2;
+    return s;
+  }
+
   function pickVoice(bcp47) {
     if (!voicesReady) loadVoices();
     if (!voices.length) return null;
     const lang = bcp47.toLowerCase();
     const langPrefix = lang.split("-")[0];
-    // Prefer exact match then prefix match. Prefer "Google" / "Microsoft" voices when available.
     const exact = voices.filter((v) => v.lang.toLowerCase() === lang);
     const prefix = voices.filter((v) => v.lang.toLowerCase().startsWith(langPrefix));
-    const candidates = exact.length ? exact : prefix;
+    const candidates = (exact.length ? exact : prefix).slice();
     if (!candidates.length) return null;
-    const preferred = candidates.find((v) => /Google|Microsoft|Kyoko|Ayumi|Otoya|Sora|Yuna|Heami/i.test(v.name));
-    return preferred || candidates[0];
+    candidates.sort((a, b) => voiceScore(b) - voiceScore(a));
+    return candidates[0];
+  }
+
+  // Small per-language tweaks so the default voice sounds less robotic.
+  function tuneFor(bcp47) {
+    const p = (bcp47 || "").toLowerCase().split("-")[0];
+    if (p === "ja") return { rate: 0.95, pitch: 1.02 };
+    if (p === "zh") return { rate: 0.92, pitch: 1.0 };
+    if (p === "ko") return { rate: 0.95, pitch: 1.0 };
+    if (p === "de") return { rate: 0.95, pitch: 0.98 };
+    return { rate: 0.97, pitch: 1.0 };
   }
 
   function speak(text, bcp47, opts) {
@@ -39,13 +62,14 @@ window.Audio = (function () {
     u.lang = bcp47 || "en-US";
     const v = pickVoice(u.lang);
     if (v) u.voice = v;
-    u.rate = opts.rate != null ? opts.rate : 0.9;
-    u.pitch = opts.pitch != null ? opts.pitch : 1.0;
+    const t = tuneFor(u.lang);
+    u.rate = opts.rate != null ? opts.rate : t.rate;
+    u.pitch = opts.pitch != null ? opts.pitch : t.pitch;
     u.volume = opts.volume != null ? opts.volume : 1.0;
     try { speechSynthesis.speak(u); } catch (e) {}
   }
 
-  function speakSlow(text, bcp47) { speak(text, bcp47, { rate: 0.55 }); }
+  function speakSlow(text, bcp47) { speak(text, bcp47, { rate: 0.6 }); }
 
   function isSupported() { return typeof speechSynthesis !== "undefined"; }
 

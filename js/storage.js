@@ -192,10 +192,24 @@ window.Storage = (function () {
 
   // The current user's profile (the per-user sub-root). All per-user
   // accessors go through this; app-wide settings stay on the true root.
+  // Which profile is active ON THIS DEVICE. Stored in a separate, NON-synced
+  // localStorage key so each device remembers its own last-opened user even
+  // though the rest of the state is shared via cloud sync.
+  const DEVICE_USER_KEY = "mumu.device.user";
+  function deviceUser() {
+    try { return localStorage.getItem(DEVICE_USER_KEY) || ""; } catch (e) { return ""; }
+  }
+  function activeUserId() {
+    const root = load();
+    const d = deviceUser();
+    if (d && root.users && root.users[d]) return d;
+    return root.currentUser;
+  }
+
   function prof() {
     const root = load();
     if (!root.users) return root; // defensive; migrate() guarantees users
-    return root.users[root.currentUser] || root.users.rebecca || defaultProfile();
+    return root.users[activeUserId()] || root.users.rebecca || defaultProfile();
   }
 
   // ─────────────── User management ───────────────
@@ -203,10 +217,12 @@ window.Storage = (function () {
     const root = load();
     return Object.keys(root.users).map((id) => ({ id, name: (root.userNames || {})[id] || id }));
   }
-  function getCurrentUser() { return load().currentUser; }
+  function getCurrentUser() { return activeUserId(); }
   function setCurrentUser(id) {
     const root = load();
     if (!root.users[id]) return;
+    // Remember this choice for THIS device only (not synced).
+    try { localStorage.setItem(DEVICE_USER_KEY, id); } catch (e) {}
     root.currentUser = id;
     // Make sure the active language is one this user actually studies.
     const u = root.users[id];

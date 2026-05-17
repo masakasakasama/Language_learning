@@ -31,16 +31,31 @@ window.App = (function () {
     Audio.speakSlow(text, meta.bcp47);
   }
 
-  // Examples filtered by learned set
+  function levelRank(lang, lvl) {
+    const meta = getLangMeta(lang);
+    const arr = (meta && meta.levels) || [];
+    const i = arr.findIndex((x) => x.id === lvl);
+    return i < 0 ? 999 : i; // index 0 = easiest
+  }
+
+  // Examples filtered by learned set. A required word also counts as "known"
+  // if it's from an easier level than the word being introduced — e.g. an N1
+  // example may freely use N2-and-below vocab without the learner having
+  // explicitly studied each one.
   function examplesFor(cardId, lang) {
     const pack = getLangPack(lang);
     if (!pack.EXAMPLES) return [];
     const learned = Storage.learnedSet(lang);
+    const introCard = cardById(cardId, lang);
+    const introRank = introCard ? levelRank(lang, introCard.level) : 999;
     return pack.EXAMPLES.filter((ex) => {
       if (ex.introduces && ex.introduces !== cardId) return false;
       if (!ex.req) return true;
-      // req must be subset of learned (the introduced card itself is being learned now)
-      return ex.req.every((id) => !!learned[id] || id === cardId);
+      return ex.req.every((id) => {
+        if (!!learned[id] || id === cardId) return true;
+        const rc = cardById(id, lang);
+        return rc ? levelRank(lang, rc.level) < introRank : false;
+      });
     });
   }
 
