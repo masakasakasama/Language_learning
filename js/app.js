@@ -67,7 +67,7 @@ window.App = (function () {
     const m = meaning(card) || card.en || "";
     const L = lang || Storage.getLang();
     const T = {
-      ja: { text: "「" + w + "」という言葉を覚えましょう。", tr: 'Let\'s learn the word "' + m + '".' },
+      ja: { text: w, tr: m },
       en: { text: '"' + w + '" is a useful word to know.', tr: m },
       de: { text: "„" + w + "“ ist ein nützliches Wort.", tr: m },
       zh: { text: "“" + w + "”是一个很有用的词。", tr: m },
