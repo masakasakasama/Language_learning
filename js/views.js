@@ -887,43 +887,36 @@ window.Views = (function () {
     //   ① level-appropriate static example (uses only same-level-or-lower vocab)
     //   ② dynamic example built from words YOU have actually learned
     // If the dynamic section has nothing yet, we encourage the learner instead.
-    const learned = Storage.learnedSet(lang);
     const levelExamples = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
-    const dynamicExamples = (App.examplesFor(card.id, lang) || []).filter((ex) => {
-      if (!ex.req || !ex.req.length) return true;
-      return ex.req.every((id) => !!learned[id] || id === card.id);
-    });
+    // App.examplesFor already applies the learned-set AND level-assumption
+    // logic (e.g. an N1 example may use ≤N2 vocab). Do NOT re-filter here —
+    // doing so previously discarded the level-assumed examples.
+    const dynamicExamples = App.examplesFor(card.id, lang) || [];
 
+    // Combine the level-appropriate inline example(s) and the dynamic
+    // pool examples into one de-duplicated list (max 2). No more
+    // permanently-locked box.
     const exBlock = el("div", { class: "wd-examples" });
-
-    // ① level-appropriate
-    exBlock.appendChild(el("div", { class: "wd-ex-title", text: "Example sentence" }));
-    if (levelExamples.length) {
-      const ex = levelExamples[0];
-      const row = el("div", { class: "wd-ex" });
-      row.appendChild(el("div", { class: "wd-ex-text" }, [
-        el("span", { class: "wd-ex-jp", text: ex.text }),
-        el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
-      ]));
-      if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
-      exBlock.appendChild(row);
+    exBlock.appendChild(el("div", { class: "wd-ex-title", text: "Example sentences" }));
+    const seenEx = new Set();
+    const combinedEx = [];
+    levelExamples.concat(dynamicExamples).forEach((ex) => {
+      if (!ex || !ex.text || seenEx.has(ex.text)) return;
+      seenEx.add(ex.text);
+      combinedEx.push(ex);
+    });
+    if (combinedEx.length) {
+      combinedEx.slice(0, 2).forEach((ex) => {
+        const row = el("div", { class: "wd-ex" });
+        row.appendChild(el("div", { class: "wd-ex-text" }, [
+          el("span", { class: "wd-ex-jp", text: ex.text }),
+          el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
+        ]));
+        if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
+        exBlock.appendChild(row);
+      });
     } else {
       exBlock.appendChild(el("div", { class: "wd-ex-empty", text: "No example provided for this card yet." }));
-    }
-
-    // ② learned-only
-    exBlock.appendChild(el("div", { class: "wd-ex-title", style: "margin-top:10px;", text: "Using words you've learned" }));
-    if (dynamicExamples.length) {
-      const ex = dynamicExamples[0];
-      const row = el("div", { class: "wd-ex" });
-      row.appendChild(el("div", { class: "wd-ex-text" }, [
-        el("span", { class: "wd-ex-jp", text: ex.text }),
-        el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
-      ]));
-      if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
-      exBlock.appendChild(row);
-    } else {
-      exBlock.appendChild(el("div", { class: "wd-ex-locked", html: "🔓 Learn more words and this example will unlock here." }));
     }
 
     wrap.appendChild(exBlock);
