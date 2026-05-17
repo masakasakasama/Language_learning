@@ -883,19 +883,26 @@ window.Views = (function () {
 
     wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));
 
-    // App.exampleList is NEVER empty — every card always has at least a
-    // safe generic example, so "no example" can no longer appear.
+    // Two sections (per design):
+    //   ① the most common/natural example for the word
+    //   ② an example using only learned / lower-level words
+    // Neither is ever empty (safe generic fallback uses only ≤N5 vocab).
     const exBlock = el("div", { class: "wd-examples" });
-    exBlock.appendChild(el("div", { class: "wd-ex-title", text: "Example sentences" }));
-    App.exampleList(card, lang).slice(0, 2).forEach((ex) => {
+    const prim = App.primaryExample(card, lang);
+    const simp = App.simpleExample(card, lang, prim);
+    function exRow(ex) {
       const row = el("div", { class: "wd-ex" });
       row.appendChild(el("div", { class: "wd-ex-text" }, [
         el("span", { class: "wd-ex-jp", text: ex.text }),
         el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
       ]));
       if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
-      exBlock.appendChild(row);
-    });
+      return row;
+    }
+    exBlock.appendChild(el("div", { class: "wd-ex-title", text: L("Example sentence", "例文（よく使う）") }));
+    exBlock.appendChild(exRow(prim));
+    exBlock.appendChild(el("div", { class: "wd-ex-title", style: "margin-top:10px;", text: L("Using simpler words", "やさしい単語の例文") }));
+    exBlock.appendChild(exRow(simp));
 
     wrap.appendChild(exBlock);
 

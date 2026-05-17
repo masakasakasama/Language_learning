@@ -77,23 +77,40 @@ window.App = (function () {
     return T[L] || { text: w, tr: m };
   }
 
-  // The example list for a card: curated inline examples + tagged pool
-  // examples (level-aware), de-duplicated. NEVER empty — falls back to a
-  // safe generic sentence so no card ever shows "no example".
+  function normEx(e) { return Array.isArray(e) ? { text: e[0], tr: e[1] } : e; }
+
+  // ① The primary, most natural/common example for the word.
+  function primaryExample(card, lang) {
+    const L = lang || Storage.getLang();
+    const inline = (card.ex || []).map(normEx).filter((e) => e && e.text);
+    if (inline.length) return inline[0];
+    const dyn = examplesFor(card.id, L) || [];
+    if (dyn.length) return { text: dyn[0].text, tr: dyn[0].tr };
+    return genericExample(card, L);
+  }
+
+  // ② An example built ONLY from words the learner has already met OR
+  // words easier than this card's level. examplesFor() already enforces
+  // that (learned-set + level rank). Must differ from the primary; if no
+  // such curated sentence exists, the generic fallback qualifies because
+  // it only uses ≤N5 vocabulary.
+  function simpleExample(card, lang, primary) {
+    const L = lang || Storage.getLang();
+    const pText = primary && primary.text;
+    const dyn = examplesFor(card.id, L) || [];
+    for (let i = 0; i < dyn.length; i++) {
+      if (dyn[i].text && dyn[i].text !== pText) return { text: dyn[i].text, tr: dyn[i].tr };
+    }
+    return genericExample(card, L);
+  }
+
+  // Both examples, in order. NEVER empty.
   function exampleList(card, lang) {
     if (!card) return [];
     const L = lang || Storage.getLang();
-    const inline = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
-    const dynamic = examplesFor(card.id, L) || [];
-    const out = [];
-    const seen = new Set();
-    inline.concat(dynamic).forEach((ex) => {
-      if (!ex || !ex.text || seen.has(ex.text)) return;
-      seen.add(ex.text);
-      out.push(ex);
-    });
-    if (!out.length) out.push(genericExample(card, L));
-    return out;
+    const p = primaryExample(card, L);
+    const s = simpleExample(card, L, p);
+    return s && s.text !== p.text ? [p, s] : [p];
   }
 
   function refreshTopbar() {
@@ -317,7 +334,7 @@ window.App = (function () {
     return card.back || card.en || "";
   }
 
-  return { init, go, showUnit, startLesson, refreshTopbar, refreshNow, speak, speakSlow, examplesFor, exampleList, getLangPack, getLangMeta, allCards, cardById, meaning };
+  return { init, go, showUnit, startLesson, refreshTopbar, refreshNow, speak, speakSlow, examplesFor, exampleList, primaryExample, simpleExample, getLangPack, getLangMeta, allCards, cardById, meaning };
 })();
 
 document.addEventListener("DOMContentLoaded", App.init);
