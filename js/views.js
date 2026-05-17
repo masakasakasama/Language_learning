@@ -1343,8 +1343,8 @@ window.Views = (function () {
     voiceCard.appendChild(el("div", { class: "muted", text: L("🔊 Natural voice","🔊 自然な音声") }));
     voiceCard.appendChild(el("div", { class: "muted small", style: "line-height:1.6;margin-top:4px;",
       html: L(
-        "Paste a Google Cloud Text-to-Speech API key for natural Neural2 audio. Google's free tier covers ~1,000,000 characters/month. Leave empty to use the device voice.",
-        "Google Cloud Text-to-Speech の APIキーを貼ると自然なNeural2音声になる。Google無料枠で月約100万文字まで無料。空にすると端末音声に戻る。") }));
+        "Natural Neural2 audio is built in and works on every device — no setup needed. You can optionally paste your own Google Cloud Text-to-Speech API key to use your own quota instead.",
+        "自然なNeural2音声は最初から内蔵で、全デバイスで設定不要。必要なら自分のGoogle Cloud TTS APIキーを貼って自分の枠で使うこともできる。") }));
     const keyInput = el("input", {
       type: "text", value: Audio.getKey(),
       placeholder: "AIza… (Google Cloud TTS API key)",
@@ -1352,7 +1352,7 @@ window.Views = (function () {
     });
     voiceCard.appendChild(keyInput);
     const vStatus = el("div", { class: "muted small", style: "margin-top:6px;",
-      text: Audio.getKey() ? L("Active: ","現在: ") + Audio.activeVoiceName("ja-JP") : L("Using device voice","端末音声を使用中") });
+      text: L("Active: ","現在: ") + Audio.activeVoiceName("ja-JP") });
     const vRow = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;" });
     vRow.appendChild(el("button", { class: "btn primary", text: L("Save & test","保存してテスト"), onclick: () => {
       const k = keyInput.value.trim();
@@ -1368,10 +1368,10 @@ window.Views = (function () {
         }
       });
     }}));
-    vRow.appendChild(el("button", { class: "btn ghost", text: L("Clear","削除"), onclick: () => {
+    vRow.appendChild(el("button", { class: "btn ghost", text: L("Reset to built-in","内蔵に戻す"), onclick: () => {
       Audio.setKey(""); keyInput.value = "";
-      vStatus.textContent = L("Using device voice","端末音声を使用中");
-      toast(L("Cleared","削除しました"), "good");
+      vStatus.textContent = L("Active: ","現在: ") + Audio.activeVoiceName("ja-JP");
+      toast(L("Using built-in voice ✨","内蔵音声を使用 ✨"), "good");
     }}));
     voiceCard.appendChild(vRow);
     voiceCard.appendChild(vStatus);
