@@ -1338,6 +1338,49 @@ window.Views = (function () {
     backup.appendChild(backupRow);
     viewEl.appendChild(backup);
 
+    // 🔊 Voice — optional Google Cloud TTS key for natural audio
+    const voiceCard = el("div", { class: "card" });
+    voiceCard.appendChild(el("div", { class: "muted", text: L("🔊 Natural voice","🔊 自然な音声") }));
+    voiceCard.appendChild(el("div", { class: "muted small", style: "line-height:1.6;margin-top:4px;",
+      html: L(
+        "Paste a Google Cloud Text-to-Speech API key for natural Neural2 audio. Google's free tier covers ~1,000,000 characters/month. Leave empty to use the device voice.",
+        "Google Cloud Text-to-Speech の APIキーを貼ると自然なNeural2音声になる。Google無料枠で月約100万文字まで無料。空にすると端末音声に戻る。") }));
+    const keyInput = el("input", {
+      type: "text", value: Audio.getKey(),
+      placeholder: "AIza… (Google Cloud TTS API key)",
+      style: "width:100%;box-sizing:border-box;margin-top:8px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px;"
+    });
+    voiceCard.appendChild(keyInput);
+    const vStatus = el("div", { class: "muted small", style: "margin-top:6px;",
+      text: Audio.getKey() ? L("Active: ","現在: ") + Audio.activeVoiceName("ja-JP") : L("Using device voice","端末音声を使用中") });
+    const vRow = el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;" });
+    vRow.appendChild(el("button", { class: "btn primary", text: L("Save & test","保存してテスト"), onclick: () => {
+      const k = keyInput.value.trim();
+      vStatus.textContent = L("Testing…","確認中…");
+      Audio.testKey(k, (ok, err) => {
+        if (ok) {
+          Audio.setKey(k);
+          vStatus.textContent = L("✅ Working — ","✅ 成功 — ") + Audio.activeVoiceName("ja-JP");
+          toast(L("Natural voice on ✨","自然な音声ON ✨"), "good");
+        } else {
+          vStatus.textContent = L("❌ Failed: ","❌ 失敗: ") + (err || "");
+          toast(L("Key rejected","キーが無効"), "bad");
+        }
+      });
+    }}));
+    vRow.appendChild(el("button", { class: "btn ghost", text: L("Clear","削除"), onclick: () => {
+      Audio.setKey(""); keyInput.value = "";
+      vStatus.textContent = L("Using device voice","端末音声を使用中");
+      toast(L("Cleared","削除しました"), "good");
+    }}));
+    voiceCard.appendChild(vRow);
+    voiceCard.appendChild(vStatus);
+    voiceCard.appendChild(el("div", { class: "muted small", style: "margin-top:8px;line-height:1.6;",
+      html: L(
+        "How to get a key: console.cloud.google.com → create a project → enable “Cloud Text-to-Speech API” → APIs &amp; Services → Credentials → Create API key. Restrict it to the Text-to-Speech API.",
+        "キーの取り方: console.cloud.google.com →プロジェクト作成→「Cloud Text-to-Speech API」を有効化→「APIとサービス」→「認証情報」→「APIキーを作成」。Text-to-Speech APIのみに制限推奨。") }));
+    viewEl.appendChild(voiceCard);
+
     // 🛟 Auto-snapshot history — kept on this device so you can rewind even
     // without any backup file. Useful when sync ate your data.
     const snaps = Storage.getSnapshots();
