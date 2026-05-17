@@ -883,37 +883,19 @@ window.Views = (function () {
 
     wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));
 
-    const levelExamples = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
-    // App.examplesFor already applies the learned-set AND level-assumption
-    // logic (e.g. an N1 example may use ≤N2 vocab). Do NOT re-filter here —
-    // doing so previously discarded the level-assumed examples.
-    const dynamicExamples = App.examplesFor(card.id, lang) || [];
-
-    // Combine the level-appropriate inline example(s) and the dynamic
-    // pool examples into one de-duplicated list (max 2). No more
-    // permanently-locked box.
+    // App.exampleList is NEVER empty — every card always has at least a
+    // safe generic example, so "no example" can no longer appear.
     const exBlock = el("div", { class: "wd-examples" });
     exBlock.appendChild(el("div", { class: "wd-ex-title", text: "Example sentences" }));
-    const seenEx = new Set();
-    const combinedEx = [];
-    levelExamples.concat(dynamicExamples).forEach((ex) => {
-      if (!ex || !ex.text || seenEx.has(ex.text)) return;
-      seenEx.add(ex.text);
-      combinedEx.push(ex);
+    App.exampleList(card, lang).slice(0, 2).forEach((ex) => {
+      const row = el("div", { class: "wd-ex" });
+      row.appendChild(el("div", { class: "wd-ex-text" }, [
+        el("span", { class: "wd-ex-jp", text: ex.text }),
+        el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
+      ]));
+      if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
+      exBlock.appendChild(row);
     });
-    if (combinedEx.length) {
-      combinedEx.slice(0, 2).forEach((ex) => {
-        const row = el("div", { class: "wd-ex" });
-        row.appendChild(el("div", { class: "wd-ex-text" }, [
-          el("span", { class: "wd-ex-jp", text: ex.text }),
-          el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
-        ]));
-        if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
-        exBlock.appendChild(row);
-      });
-    } else {
-      exBlock.appendChild(el("div", { class: "wd-ex-empty", text: "No example provided for this card yet." }));
-    }
 
     wrap.appendChild(exBlock);
 

@@ -222,11 +222,10 @@ window.Exercises = (function () {
     const audioBtn = el("button", { class: "btn ghost big", onclick: () => App.speak(card.speakText) }, ["🔊 Listen"]);
     wrap.appendChild(audioBtn);
 
-    if (examples && examples.length || (card.ex && card.ex.length)) {
-      // Two sources: inline card.ex (level-appropriate, baked-in) +
-      // dynamic pool examples (filtered by learned set).
-      const inlineEx = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
-      const all = inlineEx.concat(examples || []).slice(0, 2);
+    {
+      // App.exampleList is never empty (safe generic fallback), so an
+      // intro always shows at least one example.
+      const all = App.exampleList(card, card.lang).slice(0, 2);
       const exWrap = el("div", { class: "intro-examples" });
       exWrap.appendChild(el("div", { class: "intro-ex-title", text: "Example" }));
       all.forEach((ex) => {

@@ -59,6 +59,43 @@ window.App = (function () {
     });
   }
 
+  // A grammatically-safe generic sentence for ANY word (the word is
+  // quoted as a lexical item, so it works regardless of part of speech).
+  // Guarantees every card always has at least one example.
+  function genericExample(card, lang) {
+    const w = card.front || card.jp || "";
+    const m = meaning(card) || card.en || "";
+    const L = lang || Storage.getLang();
+    const T = {
+      ja: { text: "「" + w + "」という言葉を覚えましょう。", tr: 'Let\'s learn the word "' + m + '".' },
+      en: { text: '"' + w + '" is a useful word to know.', tr: m },
+      de: { text: "„" + w + "“ ist ein nützliches Wort.", tr: m },
+      zh: { text: "“" + w + "”是一个很有用的词。", tr: m },
+      ko: { text: "'" + w + "'는 유용한 단어입니다.", tr: m },
+      es: { text: "«" + w + "» es una palabra útil.", tr: m }
+    };
+    return T[L] || { text: w, tr: m };
+  }
+
+  // The example list for a card: curated inline examples + tagged pool
+  // examples (level-aware), de-duplicated. NEVER empty — falls back to a
+  // safe generic sentence so no card ever shows "no example".
+  function exampleList(card, lang) {
+    if (!card) return [];
+    const L = lang || Storage.getLang();
+    const inline = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
+    const dynamic = examplesFor(card.id, L) || [];
+    const out = [];
+    const seen = new Set();
+    inline.concat(dynamic).forEach((ex) => {
+      if (!ex || !ex.text || seen.has(ex.text)) return;
+      seen.add(ex.text);
+      out.push(ex);
+    });
+    if (!out.length) out.push(genericExample(card, L));
+    return out;
+  }
+
   function refreshTopbar() {
     const lang = Storage.getLang();
     const meta = getLangMeta(lang);
@@ -268,7 +305,7 @@ window.App = (function () {
     return card.back || card.en || "";
   }
 
-  return { init, go, showUnit, startLesson, refreshTopbar, refreshNow, speak, speakSlow, examplesFor, getLangPack, getLangMeta, allCards, cardById, meaning };
+  return { init, go, showUnit, startLesson, refreshTopbar, refreshNow, speak, speakSlow, examplesFor, exampleList, getLangPack, getLangMeta, allCards, cardById, meaning };
 })();
 
 document.addEventListener("DOMContentLoaded", App.init);
