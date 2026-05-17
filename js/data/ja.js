@@ -2481,6 +2481,108 @@ window.DATA_JA = (function () {
       ["盤石","ばんじゃく","banjaku","rock-solid"],
       ["不動","ふどう","fudou","immovable / steadfast"],
       ["流動","りゅうどう","ryuudou","fluid / changeable"]
+    ]),
+
+    // ─── N1 expansion v6 — high-frequency common words ───
+    commonNounsN1: vocabCards("common-nouns-n1", "N1", [
+      ["骨子","こっし","kosshi","framework / gist"],
+      ["大筋","おおすじ","oosuji","outline / main points"],
+      ["裏付け","うらづけ","urazuke","backing / corroboration"],
+      ["事例","じれい","jirei","case / example"],
+      ["実例","じつれい","jitsurei","actual example"],
+      ["領域","りょういき","ryouiki","domain / area"],
+      ["側面","そくめん","sokumen","aspect / side"],
+      ["焦点","しょうてん","shouten","focus"],
+      ["動向","どうこう","doukou","trend / movement"],
+      ["主流","しゅりゅう","shuryuu","mainstream"],
+      ["基調","きちょう","kichou","keynote / basic tone"],
+      ["基盤","きばん","kiban","foundation / base"],
+      ["土台","どだい","dodai","foundation"],
+      ["系統","けいとう","keitou","system / lineage"],
+      ["序列","じょれつ","joretsu","order / hierarchy"],
+      ["階層","かいそう","kaisou","hierarchy / stratum"],
+      ["区分","くぶん","kubun","division / classification"],
+      ["類型","るいけい","ruikei","type / pattern"],
+      ["意図","いと","ito","intention"],
+      ["真意","しんい","shin'i","true intention"],
+      ["本音","ほんね","honne","true feelings"],
+      ["建前","たてまえ","tatemae","public stance"],
+      ["所在","しょざい","shozai","whereabouts / location"],
+      ["如何","いかん","ikan","how / depending on"],
+      ["諸般","しょはん","shohan","various / all kinds"]
+    ]),
+    commonVerbs2N1: vocabCards("common-verbs2-n1", "N1", [
+      ["至る","いたる","itaru","to reach / lead to"],
+      ["及ぶ","およぶ","oyobu","to reach / extend to"],
+      ["伴う","ともなう","tomonau","to accompany / entail"],
+      ["要する","ようする","yousuru","to require"],
+      ["費やす","ついやす","tsuiyasu","to spend / consume"],
+      ["補う","おぎなう","oginau","to make up for"],
+      ["構える","かまえる","kamaeru","to set up / take a stance"],
+      ["設ける","もうける","moukeru","to establish / set up"],
+      ["講じる","こうじる","koujiru","to take (measures)"],
+      ["図る","はかる","hakaru","to aim for / attempt"],
+      ["企てる","くわだてる","kuwadateru","to plan / scheme"],
+      ["妨げる","さまたげる","samatageru","to obstruct"],
+      ["逃れる","のがれる","nogareru","to escape"],
+      ["省く","はぶく","habuku","to omit / save"],
+      ["施す","ほどこす","hodokosu","to give / apply"],
+      ["授ける","さずける","sazukeru","to grant / teach"],
+      ["負う","おう","ou","to bear / owe"],
+      ["被る","こうむる","koumuru","to suffer / incur"],
+      ["導く","みちびく","michibiku","to lead / guide"],
+      ["率いる","ひきいる","hikiiru","to lead (a group)"],
+      ["束ねる","たばねる","tabaneru","to bundle / lead"],
+      ["臨む","のぞむ","nozomu","to face / attend"],
+      ["応じる","おうじる","oujiru","to respond / comply"],
+      ["報いる","むくいる","mukuiru","to reward / repay"],
+      ["報じる","ほうじる","houjiru","to report (news)"],
+      ["告げる","つげる","tsugeru","to tell / announce"],
+      ["訴える","うったえる","uttaeru","to appeal / sue"],
+      ["称する","しょうする","shousuru","to call oneself / claim"],
+      ["擁する","ようする","yousuru","to have / possess"],
+      ["請う","こう","kou","to request / beg"],
+      ["見なす","みなす","minasu","to regard as / deem"]
+    ]),
+    commonAdverbsN1: vocabCards("common-adverbs-n1", "N1", [
+      ["いかにも","いかにも","ikanimo","indeed / typically"],
+      ["いずれ","いずれ","izure","eventually / either way"],
+      ["いっそ","いっそ","isso","rather / preferably"],
+      ["おおむね","おおむね","oomune","generally / mostly"],
+      ["おのずと","おのずと","onozuto","naturally / spontaneously"],
+      ["かえって","かえって","kaette","on the contrary"],
+      ["くまなく","くまなく","kumanaku","thoroughly / everywhere"],
+      ["しいて","しいて","shiite","forcibly / if pressed"],
+      ["ずばり","ずばり","zubari","frankly / right on"],
+      ["そもそも","そもそも","somosomo","in the first place"],
+      ["たやすく","たやすく","tayasuku","easily"],
+      ["てっきり","てっきり","tekkiri","surely (mistaken belief)"],
+      ["なにとぞ","なにとぞ","nanitozo","please (formal)"],
+      ["なまじ","なまじ","namaji","halfheartedly / rashly"],
+      ["ひとえに","ひとえに","hitoeni","solely / entirely"],
+      ["まして","まして","mashite","much more / let alone"],
+      ["むしろ","むしろ","mushiro","rather"],
+      ["めっきり","めっきり","mekkiri","markedly / noticeably"],
+      ["やにわに","やにわに","yaniwani","suddenly / abruptly"],
+      ["ややもすると","ややもすると","yayamosuruto","tend to / be apt to"],
+      ["よもや","よもや","yomoya","surely not"],
+      ["おもむろに","おもむろに","omomuroni","slowly / deliberately"],
+      ["しきりに","しきりに","shikirini","repeatedly / eagerly"],
+      ["ことのほか","ことのほか","kotonohoka","exceptionally"],
+      ["なかんずく","なかんずく","nakanzuku","above all"],
+      ["いわば","いわば","iwaba","so to speak"],
+      ["おしなべて","おしなべて","oshinabete","generally / across the board"],
+      ["つぶさに","つぶさに","tsubusani","in detail / minutely"],
+      ["ひたすら","ひたすら","hitasura","earnestly / single-mindedly"],
+      ["やがて","やがて","yagate","before long / eventually"],
+      ["とっさに","とっさに","tossani","instantly / on the spur"],
+      ["かねがね","かねがね","kanegane","for a long time"],
+      ["あらかじめ","あらかじめ","arakajime","beforehand"],
+      ["ひいき","ひいき","hiiki","favoritism"],
+      ["ひっきりなしに","ひっきりなしに","hikkirinashini","incessantly"],
+      ["うすうす","うすうす","usuusu","vaguely / faintly"],
+      ["まんざら","まんざら","manzara","not entirely"],
+      ["なんなりと","なんなりと","nannarito","anything (you wish)"]
     ])
   };
 
@@ -3299,6 +3401,25 @@ window.DATA_JA = (function () {
         lesson("ja-l-sp-2","Nature & norms","flashcards", { cards: VOCAB.statePropertyN1.slice(17,34) }),
         lesson("ja-l-sp-3","Conditions","flashcards", { cards: VOCAB.statePropertyN1.slice(34) }),
         lesson("ja-l-sp-q","States quiz","quiz", { cards: VOCAB.statePropertyN1 })
+      ] },
+    // ── N1 expansion v6 — high-frequency common words ──
+    { id: "ja-u-common-nouns-n1", level: "N1", title: "Common nouns", icon: "🧩", color: "#bae6fd",
+      lessons: [
+        lesson("ja-l-cn-1","Nouns (1)","flashcards", { cards: VOCAB.commonNounsN1.slice(0,13) }),
+        lesson("ja-l-cn-2","Nouns (2)","flashcards", { cards: VOCAB.commonNounsN1.slice(13) }),
+        lesson("ja-l-cn-q","Nouns quiz","quiz", { cards: VOCAB.commonNounsN1 })
+      ] },
+    { id: "ja-u-common-verbs2-n1", level: "N1", title: "Common verbs", icon: "🏃", color: "#bbf7d0",
+      lessons: [
+        lesson("ja-l-cv2-1","Verbs (1)","flashcards", { cards: VOCAB.commonVerbs2N1.slice(0,16) }),
+        lesson("ja-l-cv2-2","Verbs (2)","flashcards", { cards: VOCAB.commonVerbs2N1.slice(16) }),
+        lesson("ja-l-cv2-q","Verbs quiz","quiz", { cards: VOCAB.commonVerbs2N1 })
+      ] },
+    { id: "ja-u-common-adverbs-n1", level: "N1", title: "Common adverbs", icon: "✨", color: "#fde68a",
+      lessons: [
+        lesson("ja-l-cadv-1","Adverbs (1)","flashcards", { cards: VOCAB.commonAdverbsN1.slice(0,19) }),
+        lesson("ja-l-cadv-2","Adverbs (2)","flashcards", { cards: VOCAB.commonAdverbsN1.slice(19) }),
+        lesson("ja-l-cadv-q","Adverbs quiz","quiz", { cards: VOCAB.commonAdverbsN1 })
       ] }
   ];
 
@@ -3375,6 +3496,33 @@ window.DATA_JA = (function () {
       if (!ex.text) return;
       EXAMPLES.push({ text: ex.text, tr: ex.tr || "", req: [], introduces: c.id });
     });
+  })();
+
+  // N1 learning path ordered by real-world frequency: the categories
+  // whose vocabulary actually shows up most in news / business / daily
+  // writing come first; rare/literary sets (idioms, 四字熟語) come last.
+  (function orderN1Units() {
+    const order = [
+      "ja-u-adv-n1", "ja-u-adv-verbs-n1", "ja-u-adv-nouns-n1", "ja-u-adv-expr-n1",
+      "ja-u-common-nouns-n1", "ja-u-common-verbs2-n1", "ja-u-common-adverbs-n1",
+      "ja-u-daily-n1", "ja-u-media-n1", "ja-u-politics-n1", "ja-u-economy-n1",
+      "ja-u-biz-n1", "ja-u-workplace-n1", "ja-u-negotiation-n1", "ja-u-society2-n1",
+      "ja-u-education-n1", "ja-u-science-n1", "ja-u-tech-n1", "ja-u-medicine-n1",
+      "ja-u-law-n1", "ja-u-academic-n1", "ja-u-psychology-n1", "ja-u-emotions2-n1",
+      "ja-u-personality-n1", "ja-u-verbs3-n1", "ja-u-manner-verbs-n1",
+      "ja-u-adverbs-n1", "ja-u-degree-n1", "ja-u-timeflow-n1", "ja-u-cause-effect-n1",
+      "ja-u-state-property-n1", "ja-u-logic-n1", "ja-u-nature-n1", "ja-u-artculture-n1",
+      "ja-u-formal-n1", "ja-u-keigo-n1", "ja-u-grammar-n1", "ja-u-kanji-n1",
+      "ja-u-idiom-n1", "ja-u-idioms2-n1", "ja-u-yoji2-n1"
+    ];
+    const rank = {};
+    order.forEach((id, i) => { rank[id] = i; });
+    const rest = UNITS.filter((u) => u.level !== "N1");
+    const n1 = UNITS.filter((u) => u.level === "N1")
+      .sort((a, b) => (rank[a.id] == null ? 999 : rank[a.id]) - (rank[b.id] == null ? 999 : rank[b.id]));
+    UNITS.length = 0;
+    rest.forEach((u) => UNITS.push(u));
+    n1.forEach((u) => UNITS.push(u));
   })();
 
   return {

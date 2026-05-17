@@ -25,6 +25,9 @@ window.Audio = (function () {
     if (/Kyoko|Otoya|O-ren|Hattori|Ayumi|Sora|Nanami|Keita|Mizuki|Yuna|Heami|Sun-Hi|Huihui|Xiaoxiao|Yunyang|Tingting|Sin-?ji/i.test(n)) s += 28;
     if (v.localService === false) s += 18; // online voices are usually richer
     if (v.default) s += 2;
+    // Heavily penalise the low-quality robotic variants. On iOS the
+    // "compact" system voices are the tinny ones; eSpeak/eloquence too.
+    if (/compact|eloquence|espeak|robot|fred|albert|zarvox|compact/i.test(n)) s -= 80;
     return s;
   }
 
