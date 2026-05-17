@@ -888,45 +888,36 @@ window.Views = (function () {
     //   ② an example using only learned / lower-level words
     // Neither is ever empty (safe generic fallback uses only ≤N5 vocab).
     const exBlock = el("div", { class: "wd-examples" });
-    function exRow(ex) {
-      const row = el("div", { class: "wd-ex" });
-      row.appendChild(el("div", { class: "wd-ex-text" }, [
-        el("span", { class: "wd-ex-jp", text: ex.text }),
-        el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
-      ]));
-      if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
-      return row;
+    function exCard(label, ex, idx) {
+      const c = el("div", { class: "wd-ex-card wd-ex-card-" + (idx % 2 === 0 ? "a" : "b") });
+      const head = el("div", { class: "wd-ex-head" }, [
+        el("span", { class: "wd-ex-badge", text: label }),
+        el("button", { class: "btn ghost tiny wd-ex-spk", onclick: () => App.speak(ex.text) }, ["🔊"])
+      ]);
+      c.appendChild(head);
+      c.appendChild(el("div", { class: "wd-ex-jp", text: ex.text }));
+      if (ex.tr) c.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
+      return c;
     }
-    let anyEx = false;
+    const exItems = [];
     if (lang === "ja") {
-      // Japanese: only the word's own example(s). No "uses easier words"
-      // variant. If the word has two meanings, show one example per meaning.
       const inline = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e)
         .filter((e) => e && e.text).slice(0, 2);
       const senses = String(card.en || "").split(/\s*\/\s*|\s*;\s*/).map((s) => s.trim()).filter(Boolean);
       inline.forEach((ex, i) => {
         const label = inline.length >= 2 && senses[i]
-          ? "例文（" + senses[i] + "）"
-          : (i === 0 ? "例文" : "別の例文");
-        exBlock.appendChild(el("div", { class: "wd-ex-title", style: i ? "margin-top:10px;" : "", text: label }));
-        exBlock.appendChild(exRow(ex));
-        anyEx = true;
+          ? (i === 0 ? "① " : "② ") + senses[i]
+          : "例文";
+        exItems.push([label, ex]);
       });
     } else {
       const prim = App.primaryExample(card, lang);
       const simp = App.simpleExample(card, lang, prim);
-      if (prim) {
-        exBlock.appendChild(el("div", { class: "wd-ex-title", text: L("Example sentence", "例文") }));
-        exBlock.appendChild(exRow(prim));
-        anyEx = true;
-      }
-      if (simp && (!prim || simp.text !== prim.text)) {
-        exBlock.appendChild(el("div", { class: "wd-ex-title", style: "margin-top:10px;", text: L("Another example", "別の例文") }));
-        exBlock.appendChild(exRow(simp));
-        anyEx = true;
-      }
+      if (prim) exItems.push([L("Example", "例文"), prim]);
+      if (simp && (!prim || simp.text !== prim.text)) exItems.push([L("Another example", "別の例文"), simp]);
     }
-    if (anyEx) wrap.appendChild(exBlock);
+    exItems.forEach(([label, ex], i) => exBlock.appendChild(exCard(label, ex, i)));
+    if (exItems.length) wrap.appendChild(exBlock);
 
     // Self-assessment block — visible 3-button row
     const currentMark = Storage.getMark(card.id, lang);

@@ -226,15 +226,20 @@ window.Exercises = (function () {
       // Real examples only — omit the block entirely if the card has none.
       const all = App.exampleList(card, card.lang).slice(0, 2);
       if (all.length) {
-        const exWrap = el("div", { class: "intro-examples" });
-        exWrap.appendChild(el("div", { class: "intro-ex-title", text: "Example" }));
-        all.forEach((ex) => {
-          const exEl = el("div", { class: "intro-ex" }, [
-            el("div", { class: "intro-ex-text", text: ex.text }),
-            el("div", { class: "intro-ex-tr", text: ex.tr }),
-            el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
-          ]);
-          exWrap.appendChild(exEl);
+        const exWrap = el("div", { class: "wd-examples", style: "margin-top:14px;" });
+        const senses = String(card.en || "").split(/\s*\/\s*|\s*;\s*/).map((s) => s.trim()).filter(Boolean);
+        all.forEach((ex, i) => {
+          const label = card.lang === "ja" && all.length >= 2 && senses[i]
+            ? (i === 0 ? "① " : "② ") + senses[i]
+            : (i === 0 ? "Example" : "Another example");
+          const c = el("div", { class: "wd-ex-card wd-ex-card-" + (i % 2 === 0 ? "a" : "b") });
+          c.appendChild(el("div", { class: "wd-ex-head" }, [
+            el("span", { class: "wd-ex-badge", text: label }),
+            el("button", { class: "btn ghost tiny wd-ex-spk", onclick: () => App.speak(ex.text) }, ["🔊"])
+          ]));
+          c.appendChild(el("div", { class: "wd-ex-jp", text: ex.text }));
+          if (ex.tr) c.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
+          exWrap.appendChild(c);
         });
         wrap.appendChild(exWrap);
       }
