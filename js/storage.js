@@ -47,7 +47,7 @@ window.Storage = (function () {
   // multi-user — so migration is just "wrap the old root into users.rebecca".
   function defaultProfile() {
     const en = defaultLangState(); en.trackForTaskManager = false;
-    const de = defaultLangState(); de.trackForTaskManager = false;
+    const de = defaultLangState(); // German IS linked (俺's task-manager bridge)
     return {
       currentLang: "ja",
       allowedLangs: ALL_LANGS.slice(),  // which languages this user studies
@@ -152,7 +152,10 @@ window.Storage = (function () {
       ALL_LANGS.forEach((l) => {
         if (!u.languages[l]) u.languages[l] = defaultLangState();
         const s = u.languages[l];
-        if (typeof s.trackForTaskManager !== "boolean") s.trackForTaskManager = (l !== "en" && l !== "de");
+        if (typeof s.trackForTaskManager !== "boolean") s.trackForTaskManager = (l !== "en");
+        // 俺's German is the whole point of the task-manager bridge — keep
+        // it linked even if an older state saved it as false.
+        if (uid === "me" && l === "de") s.trackForTaskManager = true;
         if (typeof s.dailyGoal !== "number") s.dailyGoal = 20;
         if (!s.cards) s.cards = {};
         if (!s.lessonsCompleted) s.lessonsCompleted = {};

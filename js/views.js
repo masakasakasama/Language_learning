@@ -1121,10 +1121,10 @@ window.Views = (function () {
       dailyGrid.appendChild(item);
     });
     // Show inactive (untracked) languages as a small "add" row
-    const untracked = ["ja","ko","en","es"].filter((l) => !Storage.isTracked(l));
+    const untracked = Storage.getAllowedLangs().filter((l) => !Storage.isTracked(l));
     if (untracked.length) {
       const addRow = el("div", { class: "daily-goal-addrow" });
-      addRow.appendChild(el("div", { class: "muted small", text: "Not linked to task manager:" }));
+      addRow.appendChild(el("div", { class: "muted small", text: L("Not linked to task manager:","タスク管理に未連携:") }));
       untracked.forEach((l) => {
         const m = getLangMeta(l);
         const btn = el("button", { class: "btn ghost tiny", title: "Link " + m.nativeName, onclick: () => {
@@ -1136,23 +1136,17 @@ window.Views = (function () {
     }
     dailyCard.appendChild(dailyGrid);
     dailyCard.appendChild(el("div", { class: "muted small", style: "margin-top:8px;line-height:1.5;",
-      html: "Tap a language to <b>unlink</b> it from the task manager. Tap ⚙️ to change its goal. <b>20 cards ≈ 3–5 min</b>." }));
+      html: L("Tap a language to <b>unlink</b> it from the task manager. Tap ⚙️ to change its goal. <b>20 cards ≈ 3–5 min</b>.",
+              "言語をタップで<b>連携解除</b>。⚙️で目標を変更。<b>20枚 ≈ 3〜5分</b>。") }));
 
     // Auto-sync explainer (primary path — no setup needed beyond Cloud Sync)
-    const syncOn = window.Sync && window.Sync.isConfigured && window.Sync.isConfigured();
+    const trackedNames = Storage.trackedLangs().map((l) => getLangMeta(l).nativeName).join(" / ") || "—";
     const linked = Storage.trackedLangs().map((l) => getLangMeta(l).flag).join(" ");
-    const integrate = el("div", { class: "integrate-block " + (syncOn ? "on" : "off") });
-    integrate.appendChild(el("div", { class: "integrate-title", text: "🔗 Linked to task manager: " + (linked || "—") }));
+    const integrate = el("div", { class: "integrate-block on" });
+    integrate.appendChild(el("div", { class: "integrate-title", text: L("🔗 Linked to task manager: ","🔗 タスク管理と連携中: ") + (linked || "—") }));
     integrate.appendChild(el("div", { class: "muted small", style: "line-height:1.5;",
-      html: syncOn
-        ? "When you finish a daily goal for one of the above, mumu writes it to " +
-          "<code>sync/&lt;your-code&gt;/state/main.dailyAchievements[today][lang]</code>. " +
-          "Your task-manager app reads the same Firestore doc (same sync code) and " +
-          "ticks off its 日本語 / 韓国語 / スペイン語 columns automatically — no new columns needed."
-        : "Set up <b>☁️ Cloud sync</b> below first. Once you have a sync code, " +
-          "achievements for the languages above flow into your task manager's " +
-          "existing 日本語 / 韓国語 / スペイン語 columns automatically."
-    }));
+      html: L("When you hit a daily goal for <b>" + trackedNames + "</b>, mumu automatically marks the matching habit in your task manager. No setup needed.",
+              "<b>" + trackedNames + "</b> の今日の目標を達成すると、mumu が自動でタスク管理の対応する習慣にチェックを入れるよ。設定は不要。") }));
     dailyCard.appendChild(integrate);
 
     // Advanced: outbound webhook (kept for power users who want Zapier / IFTTT etc.)
