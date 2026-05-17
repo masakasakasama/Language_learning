@@ -281,7 +281,9 @@ window.App = (function () {
     } catch (e) { console.warn("[mumu] data-loss detection failed", e); }
   }
 
-  // 更新ボタン: クラウドから取り直し（push もしてから現在ビューを再描画）
+  // 更新ボタン: アプリ本体を最新版に強制更新（キャッシュ全消去 + 再取得）。
+  // クラウドの学習データも push してから、キャッシュ破棄リロードで
+  // 必ず最新のコードを取りに行く。
   async function refreshNow() {
     const btn = document.getElementById("refresh-btn");
     if (btn) btn.classList.add("spinning");
@@ -290,11 +292,21 @@ window.App = (function () {
       if (window.Sync && Sync.enabled && Sync.enabled()) {
         try { await Sync.pushNow(); } catch (e) {}
       }
-      go(currentView);
-      refreshTopbar();
-    } finally {
-      setTimeout(() => { if (btn) btn.classList.remove("spinning"); }, 600);
-    }
+    } catch (e) {}
+    // Hard update: wipe Cache Storage + service workers, then reload
+    // with a fresh query so the browser cannot serve a stale index.html.
+    try {
+      const jobs = [];
+      if (window.caches && caches.keys) {
+        jobs.push(caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))));
+      }
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        jobs.push(navigator.serviceWorker.getRegistrations().then((rs) => Promise.all(rs.map((r) => r.unregister()))));
+      }
+      await Promise.all(jobs);
+    } catch (e) {}
+    const base = location.href.split(/[?#]/)[0];
+    location.replace(base + "?u=" + Date.now());
   }
 
   // The meaning to display for a card. For the 俺 profile show the
