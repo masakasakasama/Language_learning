@@ -899,12 +899,15 @@ window.Views = (function () {
       if (ex.tr) row.appendChild(el("div", { class: "wd-ex-tr", text: ex.tr }));
       return row;
     }
-    exBlock.appendChild(el("div", { class: "wd-ex-title", text: L("Example sentence", "例文（よく使う）") }));
-    exBlock.appendChild(exRow(prim));
-    exBlock.appendChild(el("div", { class: "wd-ex-title", style: "margin-top:10px;", text: L("Using simpler words", "やさしい単語の例文") }));
-    exBlock.appendChild(exRow(simp));
-
-    wrap.appendChild(exBlock);
+    if (prim) {
+      exBlock.appendChild(el("div", { class: "wd-ex-title", text: L("Example sentence", "例文") }));
+      exBlock.appendChild(exRow(prim));
+    }
+    if (simp && (!prim || simp.text !== prim.text)) {
+      exBlock.appendChild(el("div", { class: "wd-ex-title", style: "margin-top:10px;", text: L("Another example", "別の例文") }));
+      exBlock.appendChild(exRow(simp));
+    }
+    if (prim || simp) wrap.appendChild(exBlock);
 
     // Self-assessment block — visible 3-button row
     const currentMark = Storage.getMark(card.id, lang);

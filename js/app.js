@@ -59,23 +59,10 @@ window.App = (function () {
     });
   }
 
-  // A grammatically-safe generic sentence for ANY word (the word is
-  // quoted as a lexical item, so it works regardless of part of speech).
-  // Guarantees every card always has at least one example.
-  function genericExample(card, lang) {
-    const w = card.front || card.jp || "";
-    const m = meaning(card) || card.en || "";
-    const L = lang || Storage.getLang();
-    const T = {
-      ja: { text: w, tr: m },
-      en: { text: '"' + w + '" is a useful word to know.', tr: m },
-      de: { text: "„" + w + "“ ist ein nützliches Wort.", tr: m },
-      zh: { text: "“" + w + "”是一个很有用的词。", tr: m },
-      ko: { text: "'" + w + "'는 유용한 단어입니다.", tr: m },
-      es: { text: "«" + w + "» es una palabra útil.", tr: m }
-    };
-    return T[L] || { text: w, tr: m };
-  }
+  // No fake example. If a card has no real sentence, callers return null
+  // and the UI simply omits the example block rather than showing the bare
+  // word or a "X is a useful word" filler (which is not an example).
+  function genericExample() { return null; }
 
   function normEx(e) { return Array.isArray(e) ? { text: e[0], tr: e[1] } : e; }
 
@@ -89,11 +76,10 @@ window.App = (function () {
     return genericExample(card, L);
   }
 
-  // ② An example built ONLY from words the learner has already met OR
-  // words easier than this card's level. examplesFor() already enforces
-  // that (learned-set + level rank). Must differ from the primary; if no
-  // such curated sentence exists, the generic fallback qualifies because
-  // it only uses ≤N5 vocabulary.
+  // ② A SECOND, genuinely different example — a curated sentence using
+  // simpler/learned vocabulary, or a second inline sentence. Returns null
+  // when no real second sentence exists (the UI then omits the block
+  // instead of showing the bare word as a fake "example").
   function simpleExample(card, lang, primary) {
     const L = lang || Storage.getLang();
     const pText = primary && primary.text;
@@ -101,16 +87,21 @@ window.App = (function () {
     for (let i = 0; i < dyn.length; i++) {
       if (dyn[i].text && dyn[i].text !== pText) return { text: dyn[i].text, tr: dyn[i].tr };
     }
-    return genericExample(card, L);
+    const inline = (card.ex || []).map(normEx).filter((e) => e && e.text && e.text !== pText);
+    if (inline.length) return inline[0];
+    return null;
   }
 
-  // Both examples, in order. NEVER empty.
+  // Real examples only, in order. May be empty if the card has none.
   function exampleList(card, lang) {
     if (!card) return [];
     const L = lang || Storage.getLang();
     const p = primaryExample(card, L);
     const s = simpleExample(card, L, p);
-    return s && s.text !== p.text ? [p, s] : [p];
+    const out = [];
+    if (p) out.push(p);
+    if (s && (!p || s.text !== p.text)) out.push(s);
+    return out;
   }
 
   function refreshTopbar() {

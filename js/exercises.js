@@ -223,20 +223,21 @@ window.Exercises = (function () {
     wrap.appendChild(audioBtn);
 
     {
-      // App.exampleList is never empty (safe generic fallback), so an
-      // intro always shows at least one example.
+      // Real examples only — omit the block entirely if the card has none.
       const all = App.exampleList(card, card.lang).slice(0, 2);
-      const exWrap = el("div", { class: "intro-examples" });
-      exWrap.appendChild(el("div", { class: "intro-ex-title", text: "Example" }));
-      all.forEach((ex) => {
-        const exEl = el("div", { class: "intro-ex" }, [
-          el("div", { class: "intro-ex-text", text: ex.text }),
-          el("div", { class: "intro-ex-tr", text: ex.tr }),
-          el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
-        ]);
-        exWrap.appendChild(exEl);
-      });
-      wrap.appendChild(exWrap);
+      if (all.length) {
+        const exWrap = el("div", { class: "intro-examples" });
+        exWrap.appendChild(el("div", { class: "intro-ex-title", text: "Example" }));
+        all.forEach((ex) => {
+          const exEl = el("div", { class: "intro-ex" }, [
+            el("div", { class: "intro-ex-text", text: ex.text }),
+            el("div", { class: "intro-ex-tr", text: ex.tr }),
+            el("button", { class: "btn ghost tiny", onclick: () => App.speak(ex.text) }, ["🔊"])
+          ]);
+          exWrap.appendChild(exEl);
+        });
+        wrap.appendChild(exWrap);
+      }
     }
 
     // 3-button self-assessment: Easy / OK / Hard.
