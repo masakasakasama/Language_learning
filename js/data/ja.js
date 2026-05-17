@@ -71,13 +71,16 @@ window.DATA_JA = (function () {
       // Inline `ex` takes priority. Fall back to SIMPLE_EX dict so every card
       // gets at least one level-appropriate example sentence.
       const inlineEx = it[4] || [];
+      // SENSE_EX: words with two meanings get one example per meaning.
+      // Otherwise fall back to the single SIMPLE_EX sentence.
+      const senseEx = (typeof SENSE_EX !== "undefined" && SENSE_EX[it[0]]) || null;
       const fallback = SIMPLE_EX[it[0]] ? [SIMPLE_EX[it[0]]] : [];
       return {
         id, lang: "ja", level, deck,
         type: "vocab",
         jp: it[0], kana: it[1], romaji: it[2], en: it[3],
         de: DE_VOCAB[it[0]] || "",
-        ex: inlineEx.length ? inlineEx : fallback,
+        ex: inlineEx.length ? inlineEx : (senseEx && senseEx.length ? senseEx : fallback),
         front: it[0], back: it[3], hint: it[1],
         speakText: it[1] || it[0]
       };
