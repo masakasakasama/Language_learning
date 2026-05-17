@@ -883,10 +883,6 @@ window.Views = (function () {
 
     wrap.appendChild(el("button", { class: "btn ghost big", text: "🔊 Listen", onclick: () => App.speak(card.speakText) }));
 
-    // Two example sections:
-    //   ① level-appropriate static example (uses only same-level-or-lower vocab)
-    //   ② dynamic example built from words YOU have actually learned
-    // If the dynamic section has nothing yet, we encourage the learner instead.
     const levelExamples = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
     // App.examplesFor already applies the learned-set AND level-assumption
     // logic (e.g. an N1 example may use ≤N2 vocab). Do NOT re-filter here —
