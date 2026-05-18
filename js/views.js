@@ -218,6 +218,16 @@ window.Views = (function () {
       viewEl.appendChild(sc);
     }
 
+    // Practice (PoC) entry — cloze + listening
+    const pc = el("div", { class: "card story-entry", onclick: () => App.go("practice") });
+    pc.appendChild(el("div", { style: "font-size:22px;", text: "🧪" }));
+    pc.appendChild(el("div", { style: "flex:1;" }, [
+      el("div", { style: "font-weight:700;", text: L("Practice (beta)", "練習（ベータ）") }),
+      el("div", { class: "muted small", text: L("Fill-in-the-blank & listening", "穴埋め＆リスニング") })
+    ]));
+    pc.appendChild(el("div", { class: "muted", text: "›" }));
+    viewEl.appendChild(pc);
+
     // Mascot greeting
     const due = SRS.countDue(App.allCards(lang), lang);
     const streak = Storage.getStreak();
@@ -647,6 +657,141 @@ window.Views = (function () {
     viewEl.appendChild(body);
     viewEl.appendChild(el("div", { class: "muted small", style: "text-align:center;margin-top:12px;",
       text: L("Tap any line to hear it.", "どの行もタップで音声が流れるよ。") }));
+  }
+
+  // ─────────────── PRACTICE (PoC): cloze + listening ───────────────
+  function practicePool(lang) {
+    const all = App.allCards(lang);
+    const pool = [];
+    all.forEach((c) => {
+      if (c.type !== "vocab") return;
+      const w = c.front || c.jp;
+      const exArr = (c.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e);
+      const ex = exArr.find((e) => e && e.text && w && e.text.indexOf(w) >= 0);
+      if (w && ex) pool.push({ id: c.id, w: w, sent: ex.text, tr: ex.tr || "", mean: c.ja || c.en || c.back || "" });
+    });
+    return pool;
+  }
+
+  function practice(viewEl) {
+    clear(viewEl);
+    const lang = Storage.getLang();
+    viewEl.appendChild(el("div", { class: "lesson-head" }, [
+      el("button", { class: "btn ghost", onclick: () => App.go("home") }, ["← " + L("Home", "ホーム")]),
+      el("div", { style: "font-weight:700;flex:1;text-align:center;", text: L("Practice (beta)", "練習（ベータ）") }),
+      el("div", { style: "width:60px;" })
+    ]));
+    const pool = practicePool(lang);
+    if (pool.length < 4) {
+      viewEl.appendChild(mascot("hi", L("Not enough example sentences for this language yet.", "この言語はまだ例文が足りないよ。")));
+      return;
+    }
+    const menu = el("div", { class: "review-menu" });
+    menu.appendChild(mascot("hi", L("Pick a practice mode", "練習モードを選んでね")));
+    menu.appendChild(el("button", { class: "btn primary big", onclick: () => clozeRun(viewEl, lang, shuffle(pool.slice()).slice(0, 12)) },
+      [L("✏️ Fill in the blank", "✏️ 穴埋め") + "  (" + Math.min(12, pool.length) + ")"]));
+    menu.appendChild(el("button", { class: "btn ghost big", onclick: () => listenRun(viewEl, lang, shuffle(pool.slice()).slice(0, 12)) },
+      [L("👂 Listening", "👂 リスニング") + "  (" + Math.min(12, pool.length) + ")"]));
+    menu.appendChild(el("div", { class: "muted small", style: "text-align:center;margin-top:6px;",
+      text: L("Built from your example sentences.", "あなたの例文から自動生成。") }));
+    viewEl.appendChild(menu);
+  }
+
+  function practiceHead(viewEl, total) {
+    const head = el("div", { class: "lesson-head" });
+    head.appendChild(el("button", { class: "btn ghost", onclick: () => App.go("practice") }, ["✕"]));
+    const pw = el("div", { class: "lesson-progress-wrap" });
+    const pb = progressBar(0, "linear-gradient(90deg,#a8e6a3,#7dd3fc)");
+    pw.appendChild(pb);
+    const counter = el("div", { class: "lesson-hearts", text: "0/" + total });
+    head.appendChild(pw); head.appendChild(counter);
+    viewEl.appendChild(head);
+    return { pb, counter };
+  }
+
+  function clozeRun(viewEl, lang, items) {
+    clear(viewEl);
+    const allPool = practicePool(lang);
+    let idx = 0, correct = 0;
+    const { pb, counter } = practiceHead(viewEl, items.length);
+    const stage = el("div", { class: "lesson-stage" });
+    viewEl.appendChild(stage);
+    function next() {
+      counter.textContent = idx + "/" + items.length;
+      pb.querySelector(".progress-fill").style.width = Math.min(100, (idx / items.length) * 100) + "%";
+      if (idx >= items.length) {
+        confetti();
+        clear(stage);
+        stage.appendChild(mascot("proud", L("Nice! " + correct + "/" + items.length, "おつかれ！ " + correct + "/" + items.length)));
+        stage.appendChild(el("button", { class: "btn primary big", text: L("Back", "戻る"), onclick: () => App.go("practice") }));
+        return;
+      }
+      const it = items[idx++];
+      clear(stage);
+      const blanked = it.sent.split(it.w).join("（____）");
+      stage.appendChild(el("div", { class: "cloze-sent", text: blanked }));
+      stage.appendChild(el("div", { class: "muted small", style: "margin:6px 0 14px;", text: it.mean }));
+      const opts = [it.w];
+      const others = shuffle(allPool.filter((p) => p.w !== it.w)).slice(0, 3).map((p) => p.w);
+      others.forEach((o) => opts.push(o));
+      const grid = el("div", { class: "cloze-opts" });
+      shuffle(opts).forEach((o) => {
+        const b = el("button", { class: "btn ghost cloze-opt", text: o, onclick: () => {
+          if (b._done) return;
+          grid.querySelectorAll("button").forEach((x) => { x._done = true; x.disabled = true; });
+          const ok = o === it.w;
+          b.classList.add(ok ? "good" : "bad");
+          if (!ok) {
+            grid.querySelectorAll("button").forEach((x) => { if (x.textContent === it.w) x.classList.add("good"); });
+          }
+          if (ok) correct += 1;
+          const rev = el("div", { class: "cloze-reveal" });
+          rev.appendChild(el("div", { class: "story-line-text", text: it.sent }));
+          if (it.tr) rev.appendChild(el("div", { class: "story-line-tr", text: it.tr }));
+          rev.appendChild(el("button", { class: "btn ghost tiny", onclick: () => App.speak(it.sent) }, ["🔊"]));
+          stage.appendChild(rev);
+          stage.appendChild(el("button", { class: "btn primary big", text: L("Next", "次へ"), onclick: next }));
+        }});
+        grid.appendChild(b);
+      });
+      stage.appendChild(grid);
+    }
+    next();
+  }
+
+  function listenRun(viewEl, lang, items) {
+    clear(viewEl);
+    let idx = 0;
+    const { pb, counter } = practiceHead(viewEl, items.length);
+    const stage = el("div", { class: "lesson-stage" });
+    viewEl.appendChild(stage);
+    function next() {
+      counter.textContent = idx + "/" + items.length;
+      pb.querySelector(".progress-fill").style.width = Math.min(100, (idx / items.length) * 100) + "%";
+      if (idx >= items.length) {
+        confetti();
+        clear(stage);
+        stage.appendChild(mascot("proud", L("Listening done! 👂", "リスニング完了！👂")));
+        stage.appendChild(el("button", { class: "btn primary big", text: L("Back", "戻る"), onclick: () => App.go("practice") }));
+        return;
+      }
+      const it = items[idx++];
+      clear(stage);
+      stage.appendChild(mascot("hi", L("Listen and guess.", "聞いて意味を考えよう。")));
+      stage.appendChild(el("button", { class: "btn primary big", text: L("🔊 Play again", "🔊 もう一度"), onclick: () => App.speak(it.sent) }));
+      const revBtn = el("button", { class: "btn ghost big", text: L("Show answer", "答えを見る") });
+      revBtn.onclick = () => {
+        revBtn.remove();
+        const rev = el("div", { class: "cloze-reveal" });
+        rev.appendChild(el("div", { class: "story-line-text", text: it.sent }));
+        if (it.tr) rev.appendChild(el("div", { class: "story-line-tr", text: it.tr }));
+        stage.appendChild(rev);
+        stage.appendChild(el("button", { class: "btn primary big", text: L("Next", "次へ"), onclick: next }));
+      };
+      stage.appendChild(revBtn);
+      App.speak(it.sent);
+    }
+    next();
   }
 
   // ─────────────── BROWSE ───────────────
@@ -1660,5 +1805,5 @@ window.Views = (function () {
     UI.modal(wrap);
   }
 
-  return { home, unit, lesson, review, browse, story, profile, langPicker, userPicker, onboarding, refreshSyncPill };
+  return { home, unit, lesson, review, browse, story, practice, profile, langPicker, userPicker, onboarding, refreshSyncPill };
 })();
