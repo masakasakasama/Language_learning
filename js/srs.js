@@ -186,6 +186,7 @@ window.SRS = (function () {
 
   return {
     review, applyMark, isDue, dueCardIds, countDue, summary, defaultState,
+    weakCardIds, countWeak, weakness, fuzz,
     DEFAULT_EASE, MIN_EASE
   };
 })();
