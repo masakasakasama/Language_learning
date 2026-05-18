@@ -123,6 +123,44 @@ window.SRS = (function () {
     return new Date(state.due).getTime() <= todayDate().getTime();
   }
 
+  // FSRS-style spread: jitter intervals so big batches don't all fall due on
+  // the same day (keeps daily review load even). Short intervals untouched.
+  function fuzz(interval) {
+    if (interval < 4) return interval;
+    const spread = Math.max(1, Math.round(interval * 0.05));
+    return interval + (Math.floor(Math.random() * (spread * 2 + 1)) - spread);
+  }
+
+  // How "weak" a card is: higher = needs work. Driven by lapses (forgetting),
+  // low ease (consistently hard), and being overdue.
+  function weakness(state) {
+    if (!state) return 0;
+    let s = (state.lapses || 0) * 3;
+    s += Math.max(0, (DEFAULT_EASE - (state.ease || DEFAULT_EASE))) * 4;
+    if (state.interval != null && state.interval <= 1 && (state.reps || 0) > 0) s += 2;
+    const overdueDays = Math.floor((todayDate().getTime() - new Date(state.due).getTime()) / 86400000);
+    if (overdueDays > 0) s += Math.min(overdueDays, 7) * 0.5;
+    return s;
+  }
+
+  // Cards the learner keeps getting wrong — for a focused "weak words"
+  // session, independent of due date. Sorted hardest-first.
+  function weakCardIds(allCards, lang, limit) {
+    const scored = [];
+    allCards.forEach((c) => {
+      const st = Storage.getCard(c.id, lang);
+      if (!st || (st.reps || 0) === 0) return;
+      const w = weakness(st);
+      if (w >= 3) scored.push({ id: c.id, w: w });
+    });
+    scored.sort((a, b) => b.w - a.w);
+    return scored.slice(0, limit || 30).map((x) => x.id);
+  }
+
+  function countWeak(allCards, lang) {
+    return weakCardIds(allCards, lang, 9999).length;
+  }
+
   function dueCardIds(allCards, lang) {
     return allCards.filter((c) => {
       const st = Storage.getCard(c.id, lang);

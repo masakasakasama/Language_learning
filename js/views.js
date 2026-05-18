@@ -486,18 +486,38 @@ window.Views = (function () {
   function review(viewEl) {
     clear(viewEl);
     const lang = Storage.getLang();
-    const pack = getLangPack(lang);
     const all = App.allCards(lang);
     const dueIds = SRS.dueCardIds(all, lang);
+    const weakIds = SRS.weakCardIds(all, lang, 40);
 
-    if (!dueIds.length) {
+    if (!dueIds.length && !weakIds.length) {
       viewEl.appendChild(mascot("happy", L("No cards due! 🎉<br>Come back tomorrow.", "今日の復習はなし！🎉<br>また明日来てね。")));
-      const btn = el("button", { class: "btn primary big", text: L("Back to Learn","学習に戻る"), onclick: () => App.go("home") });
-      viewEl.appendChild(btn);
+      viewEl.appendChild(el("button", { class: "btn primary big", text: L("Back to Learn","学習に戻る"), onclick: () => App.go("home") }));
       return;
     }
 
-    const cards = shuffle(dueIds.map((id) => App.cardById(id, lang)).filter(Boolean));
+    // Menu: due review and/or a focused weak-words drill.
+    const menu = el("div", { class: "review-menu" });
+    menu.appendChild(mascot("hi", L("What do you want to review?", "何を復習する？")));
+    if (dueIds.length) {
+      menu.appendChild(el("button", { class: "btn primary big", onclick: () => runSession(viewEl, shuffle(dueIds.map((id) => App.cardById(id, lang)).filter(Boolean)), lang, false) },
+        [L("📚 Due review", "📚 今日の復習") + "  (" + dueIds.length + ")"]));
+    }
+    if (weakIds.length) {
+      menu.appendChild(el("button", { class: "btn " + (dueIds.length ? "ghost" : "primary") + " big", onclick: () => runSession(viewEl, weakIds.map((id) => App.cardById(id, lang)).filter(Boolean), lang, true) },
+        [L("🎯 Weak words", "🎯 苦手集中") + "  (" + weakIds.length + ")"]));
+      menu.appendChild(el("div", { class: "muted small", style: "margin-top:6px;text-align:center;",
+        text: L("Words you keep getting wrong, hardest first.", "間違えやすい単語を、苦手な順に。") }));
+    }
+    viewEl.appendChild(menu);
+  }
+
+  // Shared review runner. `weak` = focused weak-words mode.
+  function runSession(viewEl, sessionCards, lang, weak) {
+    clear(viewEl);
+    const all = App.allCards(lang);
+    const cards = sessionCards;
+    if (!cards.length) { App.go("home"); return; }
     let idx = 0, correct = 0;
     const head = el("div", { class: "lesson-head" });
     const exitBtn = el("button", { class: "btn ghost", onclick: () => App.go("home") }, ["✕"]);
@@ -523,7 +543,9 @@ window.Views = (function () {
         confetti();
         clear(stage);
         const wrap = el("div", { class: "lesson-finish" });
-        wrap.appendChild(mascot("proud", L(`Review complete! ${correct}/${cards.length}`, `復習完了！${correct}/${cards.length}`)));
+        wrap.appendChild(mascot("proud", weak
+          ? L(`Weak words done! ${correct}/${cards.length} 💪`, `苦手集中おつかれ！${correct}/${cards.length} 💪`)
+          : L(`Review complete! ${correct}/${cards.length}`, `復習完了！${correct}/${cards.length}`)));
         wrap.appendChild(el("button", { class: "btn primary big", text: L("Home","ホーム"), onclick: () => App.go("home") }));
         stage.appendChild(wrap);
         return;
@@ -900,14 +922,15 @@ window.Views = (function () {
       return c;
     }
     const exItems = [];
-    if (lang === "ja") {
-      const inline = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e)
-        .filter((e) => e && e.text).slice(0, 2);
+    const inline = (card.ex || []).map((e) => Array.isArray(e) ? { text: e[0], tr: e[1] } : e)
+      .filter((e) => e && e.text).slice(0, 2);
+    if (inline.length) {
+      // All languages: the word's own example(s) — one per meaning when two.
       const senses = String(card.en || "").split(/\s*\/\s*|\s*;\s*/).map((s) => s.trim()).filter(Boolean);
       inline.forEach((ex, i) => {
-        const label = inline.length >= 2 && senses[i]
-          ? (i === 0 ? "① " : "② ") + senses[i]
-          : "例文";
+        const label = inline.length >= 2
+          ? (i === 0 ? "① " : "② ") + (senses[i] || (lang === "ja" ? "例文" : "Example"))
+          : L("Example", "例文");
         exItems.push([label, ex]);
       });
     } else {

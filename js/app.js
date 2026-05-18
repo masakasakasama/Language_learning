@@ -93,14 +93,13 @@ window.App = (function () {
   }
 
   // Real examples only, in order. May be empty if the card has none.
-  // Japanese: just the word's own example(s) — one per meaning when the
-  // word has two senses — and never the "uses easier words" variant.
+  // All languages: the word's own example(s) — one per meaning when the
+  // word has two senses — never the "uses easier words" variant.
   function exampleList(card, lang) {
     if (!card) return [];
     const L = lang || Storage.getLang();
-    if (L === "ja") {
-      return (card.ex || []).map(normEx).filter((e) => e && e.text).slice(0, 2);
-    }
+    const inline = (card.ex || []).map(normEx).filter((e) => e && e.text);
+    if (inline.length) return inline.slice(0, 2);
     const p = primaryExample(card, L);
     const s = simpleExample(card, L, p);
     const out = [];
