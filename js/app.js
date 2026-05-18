@@ -141,6 +141,7 @@ window.App = (function () {
     if (view === "home") Views.home(v);
     else if (view === "review") Views.review(v);
     else if (view === "browse") Views.browse(v, opts);
+    else if (view === "story") Views.story(v, opts);
     else if (view === "profile") Views.profile(v);
     refreshTopbar();
   }

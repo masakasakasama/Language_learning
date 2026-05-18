@@ -205,6 +205,19 @@ window.Views = (function () {
     ]);
     viewEl.appendChild(goalCard);
 
+    // Story / conversation mode entry
+    const stories = (window.STORIES && window.STORIES[lang]) || [];
+    if (stories.length) {
+      const sc = el("div", { class: "card story-entry", onclick: () => App.go("story") });
+      sc.appendChild(el("div", { style: "font-size:22px;", text: "📖" }));
+      sc.appendChild(el("div", { style: "flex:1;" }, [
+        el("div", { style: "font-weight:700;", text: L("Stories & conversations", "物語・会話を読む") }),
+        el("div", { class: "muted small", text: L(stories.length + " pieces · tap to read & listen", stories.length + " 本 · タップで読む＆聴く") })
+      ]));
+      sc.appendChild(el("div", { class: "muted", text: "›" }));
+      viewEl.appendChild(sc);
+    }
+
     // Mascot greeting
     const due = SRS.countDue(App.allCards(lang), lang);
     const streak = Storage.getStreak();
@@ -564,6 +577,76 @@ window.Views = (function () {
       });
     }
     next();
+  }
+
+  // ─────────────── STORY / CONVERSATION MODE ───────────────
+  function story(viewEl, opts) {
+    clear(viewEl);
+    const lang = Storage.getLang();
+    const list = (window.STORIES && window.STORIES[lang]) || [];
+    const back = el("div", { class: "lesson-head" }, [
+      el("button", { class: "btn ghost", onclick: () => App.go("home") }, ["← " + L("Home", "ホーム")]),
+      el("div", { style: "font-weight:700;flex:1;text-align:center;", text: L("Stories & conversations", "物語・会話") }),
+      el("div", { style: "width:60px;" })
+    ]);
+    viewEl.appendChild(back);
+
+    if (opts && opts.story != null && list[opts.story]) {
+      return storyReader(viewEl, list[opts.story]);
+    }
+    if (!list.length) {
+      viewEl.appendChild(mascot("hi", L("No stories for this language yet.", "この言語の物語はまだないよ。")));
+      return;
+    }
+    const wrap = el("div", { class: "story-list" });
+    list.forEach((s, i) => {
+      const item = el("div", { class: "story-item", onclick: () => App.go("story", { story: i }) });
+      item.appendChild(el("div", { class: "story-kind", text: s.kind === "dialogue" ? "💬" : "📖" }));
+      item.appendChild(el("div", { style: "flex:1;min-width:0;" }, [
+        el("div", { class: "story-title", text: s.title }),
+        el("div", { class: "muted small", text: (s.lines ? s.lines.length : 0) + L(" lines", " 文") })
+      ]));
+      item.appendChild(el("div", { class: "story-level", text: s.level || "" }));
+      wrap.appendChild(item);
+    });
+    viewEl.appendChild(wrap);
+  }
+
+  function storyReader(viewEl, s) {
+    viewEl.appendChild(el("div", { class: "story-head" }, [
+      el("span", { class: "story-level", text: s.level || "" }),
+      el("div", { class: "story-title-big", text: s.title })
+    ]));
+    let showTr = true;
+    const toggle = el("button", { class: "btn ghost", style: "margin-bottom:10px;" });
+    function setToggleLabel() { toggle.textContent = showTr ? L("Hide translation", "訳を隠す") : L("Show translation", "訳を表示"); }
+    setToggleLabel();
+    const body = el("div", { class: "story-body" });
+    (s.lines || []).forEach((ln) => {
+      const txt = Array.isArray(ln) ? ln[0] : ln.text;
+      const tr = Array.isArray(ln) ? ln[1] : ln.tr;
+      const row = el("div", { class: "story-line", onclick: () => {
+        body.querySelectorAll(".story-line.spk").forEach((n) => n.classList.remove("spk"));
+        row.classList.add("spk");
+        App.speak(txt);
+      }});
+      row.appendChild(el("div", { class: "story-line-main" }, [
+        el("span", { class: "story-line-text", text: txt }),
+        el("span", { class: "story-line-spk", text: "🔊" })
+      ]));
+      const trEl = el("div", { class: "story-line-tr", text: tr || "" });
+      row.appendChild(trEl);
+      body.appendChild(row);
+    });
+    toggle.onclick = () => {
+      showTr = !showTr;
+      body.classList.toggle("hide-tr", !showTr);
+      setToggleLabel();
+    };
+    viewEl.appendChild(toggle);
+    viewEl.appendChild(body);
+    viewEl.appendChild(el("div", { class: "muted small", style: "text-align:center;margin-top:12px;",
+      text: L("Tap any line to hear it.", "どの行もタップで音声が流れるよ。") }));
   }
 
   // ─────────────── BROWSE ───────────────
@@ -1577,5 +1660,5 @@ window.Views = (function () {
     UI.modal(wrap);
   }
 
-  return { home, unit, lesson, review, browse, profile, langPicker, userPicker, onboarding, refreshSyncPill };
+  return { home, unit, lesson, review, browse, story, profile, langPicker, userPicker, onboarding, refreshSyncPill };
 })();
