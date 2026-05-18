@@ -1063,18 +1063,3 @@ body.dark .recover-banner {
 .story-line-spk { flex: none; opacity: 0.5; font-size: 14px; }
 .story-line-tr { color: var(--muted); font-size: 13px; margin-top: 6px; }
 .story-body.hide-tr .story-line-tr { display: none; }
-
-/* ───────── Practice (PoC) ───────── */
-.cloze-sent {
-  font-family: 'Noto Sans JP','Noto Sans KR',sans-serif;
-  font-weight: 700; font-size: 19px; line-height: 1.6;
-  background: var(--surface-2); border-radius: 14px; padding: 16px; text-align: center;
-}
-.cloze-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-.cloze-opt { font-size: 17px; font-weight: 700; padding: 14px; }
-.cloze-opt.good { background: var(--good); color: #fff; }
-.cloze-opt.bad { background: var(--bad); color: #fff; }
-.cloze-reveal {
-  margin-top: 16px; background: var(--surface-2); border-radius: 14px; padding: 14px;
-  display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
-}
