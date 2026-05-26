@@ -352,9 +352,12 @@ window.Views = (function () {
       UI.shuffle(practices).forEach((p) => steps.push(p));
     } else if (lesson.type === "quiz") {
       const pool = lesson.cards;
-      // mix MC, listening, typing
+      // mix MC, listening, typing — but the 俺 profile asked for no
+      // text-input exercises in German, so swap "type" → "mc" there.
+      const noTyping = Storage.getCurrentUser() === "me" && Storage.getLang() === "de";
       lesson.cards.forEach((c, i) => {
-        const kind = i % 3 === 0 ? "listen" : i % 3 === 1 ? "type" : "mc";
+        let kind = i % 3 === 0 ? "listen" : i % 3 === 1 ? "type" : "mc";
+        if (kind === "type" && noTyping) kind = "mc";
         steps.push({ kind, card: c, pool });
       });
     } else if (lesson.type === "grammar") {
