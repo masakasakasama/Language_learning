@@ -1356,14 +1356,6 @@ window.Views = (function () {
       App.go("profile");
     }});
     settings.appendChild(themeBtn);
-    const resetBtn = el("button", { class: "btn warn", text: L("Reset all progress","進捗を全部リセット"), onclick: () => {
-      if (!confirm(L("Reset all progress for all languages? Tap Cancel and use Export Backup first if you want to keep a copy.","全言語の進捗をリセットしますか？残したい場合はキャンセルして先にバックアップを書き出してください。"))) return;
-      if (!confirm(L("Really wipe everything? This can't be undone.","本当に全部消しますか？元に戻せません。"))) return;
-      Storage.reset();
-      App.refreshTopbar();
-      App.go("home");
-    }});
-    settings.appendChild(resetBtn);
     viewEl.appendChild(settings);
 
     // Backup card — explicit export/import so accidental deletes are recoverable
@@ -1532,6 +1524,52 @@ window.Views = (function () {
       snapCard.appendChild(snapList);
       viewEl.appendChild(snapCard);
     }
+
+    // 🚨 Danger zone — hidden behind a reveal, requires typing RESET and
+    // multiple confirmations. Was on the Settings card and got tapped by
+    // accident, so it lives down here in a deliberately awkward UI.
+    const danger = el("div", { class: "card", style: "border:1px dashed var(--border);" });
+    const dHead = el("button", { class: "btn ghost small", style: "width:100%;color:var(--muted);text-align:left;",
+      text: L("🚨 Danger zone (tap to reveal)", "🚨 危険ゾーン（タップで表示）") });
+    danger.appendChild(dHead);
+    const dBody = el("div", { style: "display:none;margin-top:10px;" });
+    dBody.appendChild(el("div", { class: "muted small", style: "line-height:1.6;",
+      html: L(
+        "Wipes ALL progress for ALL languages and users on this device. Cannot be undone. Make a backup first.",
+        "全ユーザー・全言語の進捗をこの端末から完全に消す。元に戻せない。先にバックアップを書き出してね。") }));
+    const typeIn = el("input", { type: "text", placeholder: "RESET",
+      autocomplete: "off", autocapitalize: "characters", spellcheck: "false",
+      style: "width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:monospace;letter-spacing:.2em;font-size:14px;" });
+    dBody.appendChild(el("div", { class: "muted small", style: "margin-top:8px;",
+      text: L('Type "RESET" exactly to enable the button.', '有効化するには「RESET」と正確に入力。') }));
+    dBody.appendChild(typeIn);
+    const doReset = el("button", { class: "btn ghost", style: "margin-top:10px;opacity:.5;pointer-events:none;",
+      text: L("Reset all progress", "進捗を全部リセット") });
+    typeIn.addEventListener("input", () => {
+      const ok = typeIn.value === "RESET";
+      doReset.style.opacity = ok ? "1" : ".5";
+      doReset.style.pointerEvents = ok ? "auto" : "none";
+    });
+    doReset.onclick = () => {
+      if (typeIn.value !== "RESET") return;
+      if (!confirm(L("This wipes EVERYTHING for every user & language. Continue?", "全ユーザー・全言語の進捗を全消去します。続ける？"))) return;
+      if (!confirm(L("Really? You cannot get this back without a backup file.", "本当に？バックアップが無いと戻せません。"))) return;
+      if (!confirm(L("Last chance — tap Cancel to keep your progress.", "最終確認：残したい場合はキャンセル。"))) return;
+      try { Storage.downloadBackup(); } catch (e) {}
+      Storage.reset();
+      App.refreshTopbar();
+      App.go("home");
+    };
+    dBody.appendChild(doReset);
+    dHead.onclick = () => {
+      const open = dBody.style.display !== "none";
+      dBody.style.display = open ? "none" : "block";
+      dHead.textContent = open
+        ? L("🚨 Danger zone (tap to reveal)", "🚨 危険ゾーン（タップで表示）")
+        : L("🚨 Danger zone (tap to hide)", "🚨 危険ゾーン（タップで隠す）");
+    };
+    danger.appendChild(dBody);
+    viewEl.appendChild(danger);
 
     // Storage info note
     const info = el("div", { class: "card storage-info muted small" });
