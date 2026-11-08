@@ -4,6 +4,8 @@
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc }
   from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import * as authApi from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { coupleAuth, isAllowedUser } from "./coupleauth.js";
 
 // task-management の Firebase（ハードコード済み・変更不要）
 const TM_CONFIG = {
@@ -51,6 +53,8 @@ export async function notifyTaskManager(mumuUser, language, dateKey, percent = 1
       const d = new Date();
       dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
     }
+    // task-management's rules allow only our two Google accounts.
+    if (!isAllowedUser(authApi.getAuth(tmApp()).currentUser)) return;
     const db = getFirestore(tmApp());
     const ref = doc(db, "spaces", spaceId);
     const snap = await getDoc(ref);
@@ -113,4 +117,12 @@ async function backfill() {
     }
   } catch (e) { console.warn("[tasksync] backfill error:", e); }
 }
-window.addEventListener("load", () => setTimeout(backfill, 2500));
+// Sign in to the task-management project (separate Firebase project, so a
+// separate sign-in); once signed in, replay achieved days.
+window.addEventListener("load", () => {
+  coupleAuth(authApi, authApi.getAuth(tmApp()), {
+    id: "tasksync",
+    label: "タスク管理アプリとの連携にもGoogleログインが必要です",
+    onReady: () => setTimeout(backfill, 1000),
+  });
+});

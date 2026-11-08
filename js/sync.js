@@ -1,8 +1,8 @@
 // Cloud sync via Firebase Firestore.
 //
-// Every device that opens this URL writes to the same Firestore document.
-// No setup, no sign-in, no codes — the URL itself is the shared secret and
-// the Firebase config is baked into the app.
+// Every signed-in device writes to the same Firestore document. Only the two
+// allowed Google accounts can sign in for sync (see coupleauth.js), and the
+// Firestore rules in firestore.rules enforce the same allow-list.
 //
 // Push is transactional (read → merge → write inside runTransaction), so two
 // devices that have both used the app converge to the union of their data
@@ -14,11 +14,13 @@ import {
 import {
   getFirestore, doc, getDoc, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import * as authApi from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { coupleAuth } from "./coupleauth.js";
 
 const STATE_KEY = "mochi.v1";
 
 // Hardcoded Firebase project. Web API keys are designed to be public; security
-// lives in Firestore rules + the hardcoded SHARED_SYNC_CODE.
+// lives in the Firestore rules (Google sign-in allow-list).
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyCIezNBc2VaPgt3aYcMo2e3gIUpzlJB_5w",
   authDomain: "language-learning-a740a.firebaseapp.com",
@@ -321,13 +323,19 @@ function startListening() {
 
 // ─────────────── Init ───────────────
 function ensureFirebaseInit() {
-  if (!app) {
-    app = getApps().length ? getApp() : initializeApp(DEFAULT_FIREBASE_CONFIG);
-    db = getFirestore(app);
-  }
-  syncEnabled = true;
-  startListening();
-  setStatus("connecting");
+  if (app) return;
+  app = getApps().length ? getApp() : initializeApp(DEFAULT_FIREBASE_CONFIG);
+  db = getFirestore(app);
+  setStatus("disabled", "ログインするとクラウド同期します");
+  coupleAuth(authApi, authApi.getAuth(app), {
+    id: "sync",
+    label: "クラウド同期にはGoogleログインが必要です（学習はこのままでも使えます）",
+    onReady: () => {
+      syncEnabled = true;
+      startListening();
+      setStatus("connecting");
+    },
+  });
 }
 
 // ─────────────── Error banner ───────────────
@@ -345,7 +353,7 @@ function showSyncError(err) {
         "<a href='https://console.firebase.google.com/project/language-learning-a740a/firestore' target='_blank' rel='noopener' style='color:#fff;text-decoration:underline;'>" +
         "Firebase Console を開く →</a><br>" +
         "<span style='font-size:11px;opacity:.9;'>1. 「データベースを作成」をタップ<br>" +
-        "2. 「テストモードで開始」を選択<br>" +
+        "2. 「本番環境モードで開始」を選択（ルールは firestore.rules を貼り付け）<br>" +
         "3. ロケーション (asia-northeast1) → 完了<br>" +
         "4. 2-3 分待ってアプリの 🔄 をタップ</span>";
     } else if (/permission|insufficient|denied/i.test(msg)) {
@@ -355,7 +363,8 @@ function showSyncError(err) {
           "service cloud.firestore {\n" +
           "  match /databases/{database}/documents {\n" +
           "    match /sync/{code}/{document=**} {\n" +
-          "      allow read, write: if true;\n" +
+          "      allow read, write: if request.auth != null && request.auth.token.email_verified\n" +
+          "        && request.auth.token.email.lower() in ['masakasakasama.man@gmail.com', 'rere.geier@gmail.com'];\n" +
           "    }\n" +
           "  }\n" +
           "}"
@@ -367,7 +376,7 @@ function showSyncError(err) {
         "<button class='sync-error-action' onclick=\"window.open('https://console.firebase.google.com/project/language-learning-a740a/firestore/rules','_blank')\" style='margin-top:6px;'>" +
           "ルール画面を開く →</button>" +
         "<code style='display:block;padding:6px;background:rgba(0,0,0,0.25);border-radius:4px;margin-top:6px;font-size:11px;'>" +
-          "match /sync/{code}/{document=**} { allow read, write: if true; }" +
+          "リポジトリの firestore.rules の内容" +
         "</code>";
     } else {
       help = "<span style='font-size:11px;opacity:.9;'>" + msg + "</span>";

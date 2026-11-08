@@ -9,14 +9,13 @@
 // downloaded "Enhanced" voices to the web speech API, so the fallback is
 // robotic on iPhone — that is an Apple limitation, not a bug here.
 window.Audio = (function () {
-  // Built-in Google Cloud Text-to-Speech key so EVERY device/user/language
-  // gets natural Neural2 audio with no setup. Restricted to the
-  // Text-to-Speech API only; a per-device localStorage value overrides it.
-  const BUILTIN_KEY = "AIzaSyCmA5CE0IHDjZqp29qeoe5skReVu8A1rZI";
+  // No built-in key: a key shipped in this public page could be used by
+  // anyone at our expense. Each device can set its own key in Settings;
+  // without one, the device voice (Web Speech API) is used.
   const KEY_LS = "mumu_tts_key";
   function getKey() {
-    try { return (localStorage.getItem(KEY_LS) || "").trim() || BUILTIN_KEY; }
-    catch (e) { return BUILTIN_KEY; }
+    try { return (localStorage.getItem(KEY_LS) || "").trim(); }
+    catch (e) { return ""; }
   }
   function setKey(k) { try { k ? localStorage.setItem(KEY_LS, k.trim()) : localStorage.removeItem(KEY_LS); } catch (e) {} }
 
